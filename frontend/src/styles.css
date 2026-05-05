@@ -1,0 +1,53 @@
+body {
+  font-family: Arial;
+  background: #f4f6f9;
+  margin: 0;
+}
+
+.card {
+  background: white;
+  padding: 15px;
+  margin: 10px;
+  border-radius: 8px;
+}
+
+.button {
+  padding: 10px;
+  background: blue;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.badge {
+  padding: 5px 10px;
+  color: white;
+  border-radius: 5px;
+}
+
+.green { background: green; }
+.red { background: red; }
+.orange { background: orange; }
+.gray { background: gray; }
+.badge {
+  padding: 5px 10px;
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+}
+
+.green {
+  background: #2ecc71;
+}
+
+.yellow {
+  background: #f1c40f;
+}
+
+.grey {
+  background: #95a5a6;
+}
+
+.red {
+  background: #e74c3c;
+}

@@ -1,0 +1,160 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f5f7fb;
+}
+
+/* Container */
+.container {
+  padding: 20px;
+}
+
+/* Loading */
+.loading {
+  padding: 40px;
+  font-weight: bold;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  border-bottom: 4px solid #2563eb;
+  margin-bottom: 20px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.header p {
+  margin: 5px 0 0;
+  color: gray;
+}
+
+/* Score box */
+.scoreBox {
+  text-align: center;
+}
+
+.scoreValue {
+  font-size: 40px;
+  font-weight: bold;
+  color: #1d4ed8;
+}
+
+/* Grid */
+.grid {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+/* Cards */
+.card {
+  flex: 1;
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+}
+
+.card h2 {
+  margin-bottom: 10px;
+}
+
+.greenCard {
+  border-left: 5px solid green;
+}
+
+.redCard {
+  border-left: 5px solid red;
+}
+
+/* Rows */
+.row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  margin: 8px 0;
+  border-radius: 6px;
+  background: #f9fafb;
+}
+
+.greenRow {
+  border-left: 4px solid green;
+}
+
+.redRow {
+  border-left: 4px solid red;
+}
+
+/* Chart */
+.chartBox {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.chartBox h2 {
+  margin-bottom: 10px;
+}
+
+/* Table */
+.tableBox {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  background: #1f2937;
+  color: white;
+  padding: 12px;
+  text-align: left;
+}
+
+td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+tr:hover {
+  background: #f9fafb;
+}
+
+/* Badge */
+.badge {
+  padding: 5px 10px;
+  color: white;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+} .customTooltip {
+  background: #fff;
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  font-size: 13px;
+  min-width: 200px;
+}
+
+.customTooltip ul {
+  margin: 6px 0 0 0;
+  padding-left: 16px;
+}
+
+.customTooltip li {
+  font-size: 12px;
+  color: #444;
+}
