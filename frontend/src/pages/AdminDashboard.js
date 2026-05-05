@@ -37,6 +37,12 @@ export default function AdminDashboard() {
     return { label: "Laggard", color: COLORS.Laggard };
   };
 
+  const getTrendMeta = (trend) => {
+    if (trend === "UP") return { icon: "🔼", label: "Upward" };
+    if (trend === "DOWN") return { icon: "🔽", label: "Downward" };
+    return { icon: "➖", label: "Flat" };
+  };
+
   // ✅ TOOLTIP (KPI DRILLDOWN)
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -74,13 +80,14 @@ export default function AdminDashboard() {
       .then((res) => {
         console.log("API RESPONSE:", res);
 
-        // ✅ OBJECT → ARRAY
-        const deptArray = res?.departments
-          ? Object.entries(res.departments).map(([id, value]) => ({
-              id,
-              name: value?.name || id,
-              score: Number(value?.score || 0),
-              kpis: value?.kpis || []
+        // Backend returns departments as array
+        const deptArray = Array.isArray(res?.departments)
+          ? res.departments.map((d) => ({
+              id: d?.id,
+              name: d?.name || "Unknown Department",
+              score: Number(d?.score || 0),
+              trend: d?.trend || "FLAT",
+              kpis: Array.isArray(d?.kpis) ? d.kpis : []
             }))
           : [];
 
@@ -93,9 +100,9 @@ export default function AdminDashboard() {
           ...d
         }));
 
-        // ✅ BOTTOM 3 (FIXED RANK)
-        const bottom3 = sorted.slice(-3).map((d, i) => ({
-          rank: sorted.length - 2 + i,
+        const bottom3Count = Math.min(3, sorted.length);
+        const bottom3 = sorted.slice(-bottom3Count).map((d, i) => ({
+          rank: sorted.length - bottom3Count + i + 1,
           ...d
         }));
 
@@ -202,6 +209,7 @@ export default function AdminDashboard() {
               <th>Rank</th>
               <th>Department</th>
               <th>Score</th>
+              <th>Trend</th>
               <th>Category</th>
             </tr>
           </thead>
@@ -209,17 +217,19 @@ export default function AdminDashboard() {
           <tbody>
             {data.departments.length === 0 ? (
               <tr>
-                <td colSpan="4">No data available</td>
+                <td colSpan="5">No data available</td>
               </tr>
             ) : (
               data.departments.map((d, i) => {
                 const cat = getCategory(d.score);
+                const trendMeta = getTrendMeta(d.trend);
 
                 return (
-                  <tr key={i}>
+                  <tr key={d.id || i}>
                     <td>#{i + 1}</td>
                     <td>{d.name}</td>
                     <td>{d.score.toFixed(1)}</td>
+                    <td>{`${trendMeta.icon} ${trendMeta.label}`}</td>
                     <td>
                       <span
                         className="badge"

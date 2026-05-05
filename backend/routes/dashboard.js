@@ -3,7 +3,7 @@ const router = express.Router();
 
 const { getPool, sql } = require('../db');
 
-// ✅ SCORE CALCULATION (0–100 NORMALIZED)
+// ✅ SCORE (0–100)
 const calcScore = (actual, min, max, polarity) => {
   if (actual === null || actual === undefined) return 0;
   if (max === min) return 0;
@@ -13,7 +13,6 @@ const calcScore = (actual, min, max, polarity) => {
       ? ((actual - min) / (max - min)) * 100
       : ((max - actual) / (max - min)) * 100;
 
-  // ✅ Clamp between 0–100
   return Math.max(0, Math.min(100, score));
 };
 
@@ -25,14 +24,32 @@ const getCategory = (score) => {
   return "Laggard";
 };
 
+// ✅ TREND CALCULATION (current month vs previous 3 months average)
+const getTrend = (monthlyScores) => {
+  const months = Object.keys(monthlyScores).sort().reverse();
+
+  // Need at least current month + previous 3 months
+  if (months.length < 4) return "FLAT";
+
+  const current = Number(monthlyScores[months[0]] || 0);
+  const previous3 = months.slice(1, 4).map((m) => Number(monthlyScores[m] || 0));
+  const avgPrevious3 =
+    previous3.reduce((acc, val) => acc + val, 0) / previous3.length;
+
+  // 1-point deadband to avoid noisy flips
+  if (current > avgPrevious3 + 1) return "UP";
+  if (current < avgPrevious3 - 1) return "DOWN";
+  return "FLAT";
+};
+
 // =====================================================
-// ✅ DASHBOARD SUMMARY API
+// ✅ DASHBOARD SUMMARY WITH TREND
 // =====================================================
 router.get('/summary', async (req, res) => {
   try {
     const db = await getPool();
 
-    // 🔥 CURRENT MONTH (CAN UPGRADE TO AVG LATER)
+    // 🔥 FETCH LAST 6 MONTHS DATA
     const result = await db.request().query(`
       SELECT 
         d.dept_id,
@@ -46,21 +63,21 @@ router.get('/summary', async (req, res) => {
         k.weight AS kpi_weight,
         k.polarity,
 
-        pd.actual_value
+        pd.actual_value,
+        pd.entry_month,
+        pd.entry_year
 
       FROM Departments d
       JOIN KPIs k ON d.dept_id = k.dept_id
 
       LEFT JOIN PerformanceData pd 
-        ON k.kpi_id = pd.kpi_id 
-        AND pd.entry_month = MONTH(GETDATE())
-        AND pd.entry_year = YEAR(GETDATE())
+        ON k.kpi_id = pd.kpi_id
     `);
 
     const rows = result.recordset;
 
     // ============================================
-    // STEP 1: GROUP BY DEPARTMENT
+    // STEP 1: GROUP + MONTH-WISE STORAGE
     // ============================================
     const departments = {};
 
@@ -69,13 +86,30 @@ router.get('/summary', async (req, res) => {
         departments[r.dept_id] = {
           name: r.dept_name,
           weight: Number(r.dept_weight),
-          score: 0,
-          totalWeight: 0,
+          monthly: {}, // 🔥 KEY CHANGE
           kpis: []
         };
       }
 
-      // ✅ KPI SCORE
+      // Skip rows that have no submitted period/value yet
+      if (
+        r.entry_year === null ||
+        r.entry_month === null ||
+        r.actual_value === null ||
+        r.kpi_weight === null
+      ) {
+        return;
+      }
+
+      const monthKey = `${r.entry_year}-${String(r.entry_month).padStart(2, "0")}`;
+
+      if (!departments[r.dept_id].monthly[monthKey]) {
+        departments[r.dept_id].monthly[monthKey] = {
+          score: 0,
+          weight: 0
+        };
+      }
+
       const score = calcScore(
         r.actual_value,
         r.min_value,
@@ -83,40 +117,63 @@ router.get('/summary', async (req, res) => {
         r.polarity
       );
 
-      // ✅ STORE KPI (for tooltip)
-      departments[r.dept_id].kpis.push({
-        name: r.kpi_name,
-        value: Number(score.toFixed(2))
-      });
-
-      // ✅ WEIGHTED SUM
-      departments[r.dept_id].score += score * r.kpi_weight;
-      departments[r.dept_id].totalWeight += r.kpi_weight;
-    });
-
-    // ============================================
-    // STEP 2: NORMALIZE DEPARTMENT SCORE
-    // ============================================
-    Object.values(departments).forEach(d => {
-      if (d.totalWeight > 0) {
-        d.score = d.score / d.totalWeight;
+      // KPI for tooltip (only current month ideally)
+      const now = new Date();
+      if (
+        r.entry_month === now.getMonth() + 1 &&
+        r.entry_year === now.getFullYear()
+      ) {
+        departments[r.dept_id].kpis.push({
+          name: r.kpi_name,
+          value: Number(score.toFixed(2))
+        });
       }
 
-      d.score = Number(d.score.toFixed(2));
-      d.category = getCategory(d.score);
+      const kpiWeight = Number(r.kpi_weight);
+      departments[r.dept_id].monthly[monthKey].score += score * kpiWeight;
+      departments[r.dept_id].monthly[monthKey].weight += kpiWeight;
     });
 
     // ============================================
-    // STEP 3: DISTRICT SCORE (FIXED)
+    // STEP 2: CALCULATE FINAL SCORE + TREND
     // ============================================
     let districtPI = 0;
     let totalDeptWeight = 0;
 
-    Object.values(departments).forEach(d => {
-      districtPI += d.score * d.weight;
+    const deptArray = Object.entries(departments).map(([id, d]) => {
+
+      // Normalize each month
+      const monthlyScores = {};
+
+      Object.entries(d.monthly).forEach(([m, val]) => {
+        monthlyScores[m] =
+          val.weight > 0 ? val.score / val.weight : 0;
+      });
+
+      const months = Object.keys(monthlyScores).sort().reverse();
+      const latestScore = monthlyScores[months[0]] || 0;
+
+      const trend = getTrend(monthlyScores);
+
+      const score = Number(latestScore.toFixed(2));
+      const category = getCategory(score);
+
+      districtPI += score * d.weight;
       totalDeptWeight += d.weight;
+
+      return {
+        id,
+        name: d.name,
+        score,
+        category,
+        trend, // 🔥 NEW
+        kpis: d.kpis
+      };
     });
 
+    // ============================================
+    // STEP 3: DISTRICT SCORE NORMALIZATION
+    // ============================================
     if (totalDeptWeight > 0) {
       districtPI = districtPI / totalDeptWeight;
     }
@@ -124,13 +181,8 @@ router.get('/summary', async (req, res) => {
     districtPI = Number(districtPI.toFixed(2));
 
     // ============================================
-    // STEP 4: SORT + RANKING
+    // STEP 4: SORT
     // ============================================
-    const deptArray = Object.entries(departments).map(([id, d]) => ({
-      id,
-      ...d
-    }));
-
     deptArray.sort((a, b) => b.score - a.score);
 
     const top3 = deptArray.slice(0, 3);
@@ -141,7 +193,7 @@ router.get('/summary', async (req, res) => {
     // ============================================
     res.json({
       districtPI,
-      departments,   // object (used by frontend)
+      departments: deptArray, // ✅ NOW ARRAY (better)
       top3,
       bottom3
     });
