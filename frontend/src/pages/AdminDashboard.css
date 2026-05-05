@@ -127,6 +127,7 @@ th {
 td {
   padding: 12px;
   border-bottom: 1px solid #eee;
+  vertical-align: middle;
 }
 
 tr:hover {
@@ -157,4 +158,25 @@ tr:hover {
 .customTooltip li {
   font-size: 12px;
   color: #444;
+}
+
+.targetCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.deltaUp {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.deltaDown {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.sparklineBox {
+  width: 120px;
+  height: 36px;
 }

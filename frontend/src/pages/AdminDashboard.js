@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -87,6 +89,7 @@ export default function AdminDashboard() {
               name: d?.name || "Unknown Department",
               score: Number(d?.score || 0),
               trend: d?.trend || "FLAT",
+              trendSeries: Array.isArray(d?.trendSeries) ? d.trendSeries : [],
               kpis: Array.isArray(d?.kpis) ? d.kpis : []
             }))
           : [];
@@ -210,6 +213,7 @@ export default function AdminDashboard() {
               <th>Department</th>
               <th>Score</th>
               <th>Trend</th>
+              <th>3M Sparkline</th>
               <th>Category</th>
             </tr>
           </thead>
@@ -217,7 +221,7 @@ export default function AdminDashboard() {
           <tbody>
             {data.departments.length === 0 ? (
               <tr>
-                <td colSpan="5">No data available</td>
+                <td colSpan="6">No data available</td>
               </tr>
             ) : (
               data.departments.map((d, i) => {
@@ -230,6 +234,25 @@ export default function AdminDashboard() {
                     <td>{d.name}</td>
                     <td>{d.score.toFixed(1)}</td>
                     <td>{`${trendMeta.icon} ${trendMeta.label}`}</td>
+                    <td>
+                      <div className="sparklineBox">
+                        {d.trendSeries.length > 0 ? (
+                          <ResponsiveContainer width="100%" height={36}>
+                            <LineChart data={d.trendSeries}>
+                              <Line
+                                type="monotone"
+                                dataKey="score"
+                                stroke={cat.color}
+                                strokeWidth={2}
+                                dot={{ r: 2 }}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <small>No trend data</small>
+                        )}
+                      </div>
+                    </td>
                     <td>
                       <span
                         className="badge"

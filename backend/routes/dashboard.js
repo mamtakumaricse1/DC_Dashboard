@@ -24,21 +24,28 @@ const getCategory = (score) => {
   return "Laggard";
 };
 
-// ✅ TREND CALCULATION (current month vs previous 3 months average)
+const getRagStatus = (score) => {
+  if (score >= 75) return "GREEN";
+  if (score >= 50) return "AMBER";
+  return "RED";
+};
+
+// ✅ TREND CALCULATION (current month vs previous 2/3 months average)
 const getTrend = (monthlyScores) => {
   const months = Object.keys(monthlyScores).sort().reverse();
 
-  // Need at least current month + previous 3 months
-  if (months.length < 4) return "FLAT";
+  // Need at least current month + previous 2 months
+  if (months.length < 3) return "FLAT";
 
   const current = Number(monthlyScores[months[0]] || 0);
-  const previous3 = months.slice(1, 4).map((m) => Number(monthlyScores[m] || 0));
-  const avgPrevious3 =
-    previous3.reduce((acc, val) => acc + val, 0) / previous3.length;
+  const prevWindow = months.length >= 4 ? months.slice(1, 4) : months.slice(1, 3);
+  const previousScores = prevWindow.map((m) => Number(monthlyScores[m] || 0));
+  const avgPrevious =
+    previousScores.reduce((acc, val) => acc + val, 0) / previousScores.length;
 
   // 1-point deadband to avoid noisy flips
-  if (current > avgPrevious3 + 1) return "UP";
-  if (current < avgPrevious3 - 1) return "DOWN";
+  if (current > avgPrevious + 1) return "UP";
+  if (current < avgPrevious - 1) return "DOWN";
   return "FLAT";
 };
 
@@ -151,12 +158,24 @@ router.get('/summary', async (req, res) => {
       });
 
       const months = Object.keys(monthlyScores).sort().reverse();
-      const latestScore = monthlyScores[months[0]] || 0;
+      const now = new Date();
+      const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const currentMonthScore =
+        monthlyScores[currentMonthKey] !== undefined
+          ? monthlyScores[currentMonthKey]
+          : (monthlyScores[months[0]] || 0);
 
       const trend = getTrend(monthlyScores);
+      const trendSeries = months.slice(0, 3).reverse().map((month) => ({
+        month,
+        score: Number((monthlyScores[month] || 0).toFixed(2))
+      }));
 
-      const score = Number(latestScore.toFixed(2));
+      const score = Number(currentMonthScore.toFixed(2));
       const category = getCategory(score);
+      const ragStatus = getRagStatus(score);
+      const target = 100;
+      const achievement = score;
 
       districtPI += score * d.weight;
       totalDeptWeight += d.weight;
@@ -164,9 +183,15 @@ router.get('/summary', async (req, res) => {
       return {
         id,
         name: d.name,
+        weight: Number(d.weight || 0),
         score,
+        target,
+        achievement,
+        achievementDelta: Number((achievement - target).toFixed(2)),
         category,
-        trend, // 🔥 NEW
+        ragStatus,
+        trend,
+        trendSeries,
         kpis: d.kpis
       };
     });

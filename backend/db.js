@@ -4,7 +4,7 @@ const config = {
   user: 'sa',
   password: 'password',
   server: 'localhost',
-  database: 'DistrictDB2',
+  database: 'DistrictDB4',
   options: {
     instanceName: 'SQLEXPRESS',
     trustServerCertificate: true
