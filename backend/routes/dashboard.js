@@ -25,9 +25,45 @@ const getCategory = (score) => {
 };
 
 const getRagStatus = (score) => {
-  if (score >= 75) return "GREEN";
-  if (score >= 50) return "AMBER";
+  if (score >= 90) return "GREEN";
+  if (score >= 70) return "YELLOW";
   return "RED";
+};
+
+const KRA_META = {
+  D01: { code: "H", label: "Health Service Delivery", owner: "DMO (District Medical Officer)" },
+  D02: { code: "E", label: "Education Attendance & Outcomes", owner: "DDSE (Deputy Director, School Education)" },
+  D03: { code: "A", label: "Anganwadi & ECCE", owner: "DPO (ICDS)" },
+  D04: { code: "D", label: "Drug Demand-Reduction & Youth", owner: "DC + DMO + SP (joint)" },
+  D05: { code: "S", label: "Sanitation, Cleanliness & Urban Services", owner: "TMC / Municipal Cmsr + SDO" },
+  D06: { code: "I", label: "Infrastructure, Roads & Connectivity", owner: "PWD SE + PMGSY PIA" },
+  D07: { code: "W", label: "Power Supply & Distribution", owner: "Executive Engineer (Power)" },
+  D08: { code: "L", label: "Law & Order, Public Safety", owner: "Superintendent of Police" },
+  D09: { code: "G", label: "Agriculture, Horticulture & Allied", owner: "DAO + DHO + DPM-NRLM" },
+  D10: { code: "C", label: "Convergence & Saturation Villages", owner: "DC (chair) + multi-departmental" },
+  D11: { code: "R", label: "Revenue & Land", owner: "Revenue Officer + COs" },
+  D12: { code: "J", label: "Jan Suvidha (Certificates & Services)", owner: "OIC, Jan Suvidha (DC Office)" },
+  D13: { code: "M", label: "Disaster Management & Resilience", owner: "District Disaster Mgmt Officer (DDMO)" },
+  D14: { code: "P", label: "Process, People & Citizen Grievance", owner: "DC Office" }
+};
+
+const getFiscalMonthKeys = () => {
+  const now = new Date();
+  const startYear = now.getMonth() + 1 >= 4 ? now.getFullYear() : now.getFullYear() - 1;
+  return [
+    `${startYear}-04`,
+    `${startYear}-05`,
+    `${startYear}-06`,
+    `${startYear}-07`,
+    `${startYear}-08`,
+    `${startYear}-09`,
+    `${startYear}-10`,
+    `${startYear}-11`,
+    `${startYear}-12`,
+    `${startYear + 1}-01`,
+    `${startYear + 1}-02`,
+    `${startYear + 1}-03`
+  ];
 };
 
 // ✅ TREND CALCULATION (current month vs previous 2/3 months average)
@@ -56,7 +92,9 @@ router.get('/summary', async (req, res) => {
   try {
     const db = await getPool();
 
-    // 🔥 FETCH LAST 6 MONTHS DATA
+    const queryMonth = Number(req.query.month || 0);
+    const queryYear = Number(req.query.year || 0);
+
     const result = await db.request().query(`
       SELECT 
         d.dept_id,
@@ -82,28 +120,71 @@ router.get('/summary', async (req, res) => {
     `);
 
     const rows = result.recordset;
+    const totalKpis = new Set(rows.map((r) => r.kpi_id).filter(Boolean)).size;
+    const monthSet = new Set(
+      rows
+        .filter((r) => r.entry_year && r.entry_month)
+        .map((r) => `${r.entry_year}-${String(r.entry_month).padStart(2, "0")}`)
+    );
+    let monthsAvailable = Array.from(monthSet).sort();
+    try {
+      const monthMasterResult = await db.request().query(`
+        IF OBJECT_ID('ReportingMonths', 'U') IS NOT NULL
+            SELECT month_key, sort_order
+            FROM ReportingMonths
+            ORDER BY sort_order;
+        ELSE
+            SELECT CAST(NULL AS VARCHAR(7)) AS month_key, CAST(NULL AS INT) AS sort_order
+            WHERE 1=0;
+      `);
+      const masterMonths = monthMasterResult.recordset
+        .map((r) => r.month_key)
+        .filter(Boolean);
+      if (masterMonths.length > 0) {
+        monthsAvailable = masterMonths;
+      }
+    } catch (e) {
+      // fallback keeps API usable even before month master is created
+    }
+    if (monthsAvailable.length === 0) {
+      monthsAvailable = getFiscalMonthKeys();
+    }
+    const selectedMonthKey = (() => {
+      if (queryMonth >= 1 && queryMonth <= 12 && queryYear > 0) {
+        return `${queryYear}-${String(queryMonth).padStart(2, "0")}`;
+      }
+      return monthsAvailable[monthsAvailable.length - 1] || null;
+    })();
 
-    // ============================================
-    // STEP 1: GROUP + MONTH-WISE STORAGE
-    // ============================================
     const departments = {};
+    let totalGreen = 0;
+    let totalYellow = 0;
+    let totalRed = 0;
 
     rows.forEach(r => {
       if (!departments[r.dept_id]) {
+        const meta = KRA_META[r.dept_id] || {};
         departments[r.dept_id] = {
+          dept_id: r.dept_id,
           name: r.dept_name,
           weight: Number(r.dept_weight),
-          monthly: {}, // 🔥 KEY CHANGE
-          kpis: []
+          kraCode: meta.code || "NA",
+          kraLabel: meta.label || r.dept_name,
+          owner: meta.owner || "N/A",
+          monthly: {},
+          kpiIds: new Set(),
+          monthKpis: []
         };
       }
 
-      // Skip rows that have no submitted period/value yet
+      if (r.kpi_id) {
+        departments[r.dept_id].kpiIds.add(r.kpi_id);
+      }
+
       if (
         r.entry_year === null ||
         r.entry_month === null ||
-        r.actual_value === null ||
-        r.kpi_weight === null
+        r.actual_value === null
       ) {
         return;
       }
@@ -123,33 +204,33 @@ router.get('/summary', async (req, res) => {
         r.max_value,
         r.polarity
       );
-
-      // KPI for tooltip (only current month ideally)
-      const now = new Date();
-      if (
-        r.entry_month === now.getMonth() + 1 &&
-        r.entry_year === now.getFullYear()
-      ) {
-        departments[r.dept_id].kpis.push({
-          name: r.kpi_name,
-          value: Number(score.toFixed(2))
-        });
-      }
-
-      const kpiWeight = Number(r.kpi_weight);
+      const kpiWeight = 1;
       departments[r.dept_id].monthly[monthKey].score += score * kpiWeight;
       departments[r.dept_id].monthly[monthKey].weight += kpiWeight;
+
+      if (monthKey === selectedMonthKey) {
+        let status = "RED";
+        if (score >= 90) status = "GREEN";
+        else if (score >= 70) status = "YELLOW";
+
+        if (status === "GREEN") totalGreen += 1;
+        else if (status === "YELLOW") totalYellow += 1;
+        else totalRed += 1;
+
+        departments[r.dept_id].monthKpis.push({
+          kpi_id: r.kpi_id,
+          name: r.kpi_name,
+          score: Number(score.toFixed(2)),
+          status
+        });
+      }
     });
 
-    // ============================================
-    // STEP 2: CALCULATE FINAL SCORE + TREND
-    // ============================================
     let districtPI = 0;
     let totalDeptWeight = 0;
+    const actionTracker = [];
 
     const deptArray = Object.entries(departments).map(([id, d]) => {
-
-      // Normalize each month
       const monthlyScores = {};
 
       Object.entries(d.monthly).forEach(([m, val]) => {
@@ -158,11 +239,9 @@ router.get('/summary', async (req, res) => {
       });
 
       const months = Object.keys(monthlyScores).sort().reverse();
-      const now = new Date();
-      const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
       const currentMonthScore =
-        monthlyScores[currentMonthKey] !== undefined
-          ? monthlyScores[currentMonthKey]
+        selectedMonthKey && monthlyScores[selectedMonthKey] !== undefined
+          ? monthlyScores[selectedMonthKey]
           : (monthlyScores[months[0]] || 0);
 
       const trend = getTrend(monthlyScores);
@@ -172,53 +251,75 @@ router.get('/summary', async (req, res) => {
       }));
 
       const score = Number(currentMonthScore.toFixed(2));
-      const category = getCategory(score);
       const ragStatus = getRagStatus(score);
-      const target = 100;
       const achievement = score;
+      const greenCount = d.monthKpis.filter((k) => k.status === "GREEN").length;
+      const yellowCount = d.monthKpis.filter((k) => k.status === "YELLOW").length;
+      const redKpis = d.monthKpis
+        .filter((k) => k.status === "RED")
+        .sort((a, b) => a.score - b.score);
+      const redCount = redKpis.length;
+      const topRedIndicator = redKpis[0]?.name || "-";
+      const actionStatus = redCount > 0 ? "See Action Tracker" : "No Action Needed";
 
       districtPI += score * d.weight;
       totalDeptWeight += d.weight;
 
+      redKpis.forEach((kpi) => {
+        actionTracker.push({
+          deptId: id,
+          kra: `${d.kraCode} - ${d.kraLabel}`,
+          owner: d.owner,
+          indicator: kpi.name,
+          indicatorScore: kpi.score,
+          status: kpi.status,
+          month: selectedMonthKey
+        });
+      });
+
       return {
         id,
         name: d.name,
+        kra: `${d.kraCode} - ${d.kraLabel}`,
+        owner: d.owner,
         weight: Number(d.weight || 0),
+        kpiCount: d.kpiIds.size,
+        indicators: d.monthKpis.length,
+        greenCount,
+        yellowCount,
+        redCount,
         score,
-        target,
         achievement,
-        achievementDelta: Number((achievement - target).toFixed(2)),
-        category,
         ragStatus,
         trend,
         trendSeries,
-        kpis: d.kpis
+        topRedIndicator,
+        actionStatus
       };
     });
 
-    // ============================================
-    // STEP 3: DISTRICT SCORE NORMALIZATION
-    // ============================================
     if (totalDeptWeight > 0) {
       districtPI = districtPI / totalDeptWeight;
     }
 
     districtPI = Number(districtPI.toFixed(2));
-
-    // ============================================
-    // STEP 4: SORT
-    // ============================================
     deptArray.sort((a, b) => b.score - a.score);
-
     const top3 = deptArray.slice(0, 3);
     const bottom3 = deptArray.slice(-3).reverse();
 
-    // ============================================
-    // FINAL RESPONSE
-    // ============================================
     res.json({
       districtPI,
-      departments: deptArray, // ✅ NOW ARRAY (better)
+      totalKpis,
+      selectedMonth: selectedMonthKey,
+      monthsAvailable,
+      kpiStatusCounts: {
+        green: totalGreen,
+        yellow: totalYellow,
+        red: totalRed,
+        totalIndicators: totalGreen + totalYellow + totalRed
+      },
+      departments: deptArray,
+      actionTracker,
       top3,
       bottom3
     });

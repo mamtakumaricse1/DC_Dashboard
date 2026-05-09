@@ -3,6 +3,7 @@
 ## 1) Data model and table usage
 
 ### `Departments`
+
 - Stores master list of departments.
 - Key fields:
   - `dept_id` (PK)
@@ -10,6 +11,7 @@
   - `weight` (used in district composite score)
 
 ### `KPIs`
+
 - Stores KPI definitions per department.
 - Key fields:
   - `kpi_id` (PK)
@@ -19,6 +21,7 @@
   - `polarity` (`HIGHER` or `LOWER`)
 
 ### `PerformanceData`
+
 - Stores time-series KPI actual values month-wise.
 - Key fields:
   - `id` (PK)
@@ -29,6 +32,7 @@
   - `(kpi_id, entry_month, entry_year)` to prevent duplicates per month.
 
 ### `Users`
+
 - Authentication/role mapping.
 - Not used in score calculation directly.
 
@@ -41,6 +45,7 @@ Dashboard summary route (`backend/routes/dashboard.js`) fetches joined data:
 - `LEFT JOIN PerformanceData pd ON k.kpi_id = pd.kpi_id`
 
 Reason:
+
 - `JOIN` with KPIs ensures each department KPI definition is available.
 - `LEFT JOIN` on performance data preserves KPI definitions even if monthly data is missing.
 
@@ -53,13 +58,10 @@ Function: `calcScore(actual, min, max, polarity)`
 - Guard clauses:
   - if `actual` null -> score `0`
   - if `max == min` -> score `0`
-
 - For `HIGHER`:
   - `((actual - min) / (max - min)) * 100`
-
 - For `LOWER`:
   - `((max - actual) / (max - min)) * 100`
-
 - Final clamp:
   - bounded to `[0, 100]`
 
@@ -84,6 +86,7 @@ For each department:
 - Otherwise fallback to latest available month score.
 
 This score is used in:
+
 - Top 3 / Bottom 3
 - Bar chart
 - Table score
@@ -91,10 +94,12 @@ This score is used in:
 ## 6) Trend and sparkline logic
 
 ### Sparkline
+
 - `trendSeries` takes last 3 available monthly department scores.
 - Ordered old -> new for plotting.
 
 ### Trend
+
 Function: `getTrend(monthlyScores)`
 
 - If 4+ months:
@@ -105,6 +110,7 @@ Function: `getTrend(monthlyScores)`
   - `FLAT`
 
 Threshold (deadband):
+
 - `UP` if current > previousAvg + 1
 - `DOWN` if current < previousAvg - 1
 - else `FLAT`
@@ -142,10 +148,13 @@ Rounded to 2 decimals before API response.
 ## 10) SQL seeding intent (`SQLQuery1.sql`)
 
 Seed script creates:
+
 - 10 departments
 - 5 KPIs per department (50 total)
 - 6 months KPI performance data (to support trend + sparkline)
 
 Important:
+
 - Seed data is for demo spread and visualization.
 - Once live departmental entries are captured, calculations use actual entries from `PerformanceData`.
+

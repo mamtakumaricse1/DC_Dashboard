@@ -1,4 +1,4 @@
-# District Performance Dashboard - Simple Explanation (For DC)
+                                District Performance Dashboard 
 
 ## What this dashboard shows
 
@@ -57,4 +57,5 @@ Each department is classified by score:
 - Check Top 3 and Bottom 3 for immediate priorities.
 - In table, look at trend + sparkline to identify sustained decline.
 - Departments in Aspirant/Laggard with Downward trend should be prioritized for intervention.
+
 

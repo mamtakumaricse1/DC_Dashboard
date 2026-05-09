@@ -34,7 +34,7 @@ router.post('/submit', async (req, res) => {
 
     for (let e of req.body.entries) {
       await db.request()
-        .input('kid', sql.Int, e.kpi_id)
+        .input('kid', sql.VarChar, e.kpi_id)
         .input('val', sql.Float, e.actual_value)
         .query(`
           IF EXISTS (

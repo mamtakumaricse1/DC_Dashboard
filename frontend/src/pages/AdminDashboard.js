@@ -1,274 +1,241 @@
-import React, { useEffect, useState } from "react";
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-  CartesianGrid
-} from "recharts";
-
+import React, { useEffect, useMemo, useState } from "react";
 import "./AdminDashboard.css";
 
-const COLORS = {
-  Achiever: "#22c55e",
-  Performer: "#eab308",
-  Aspirant: "#f97316",
-  Laggard: "#ef4444"
-};
+const MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+];
 
 export default function AdminDashboard() {
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [data, setData] = useState({
     districtPI: 0,
+    totalKpis: 0,
+    selectedMonth: null,
+    monthsAvailable: [],
+    kpiStatusCounts: { green: 0, yellow: 0, red: 0, totalIndicators: 0 },
     departments: [],
-    top3: [],
-    bottom3: []
+    actionTracker: []
   });
-
   const [loading, setLoading] = useState(true);
 
-  // ✅ CATEGORY LOGIC
-  const getCategory = (score) => {
-    if (score >= 85) return { label: "Achiever", color: COLORS.Achiever };
-    if (score >= 65) return { label: "Performer", color: COLORS.Performer };
-    if (score >= 40) return { label: "Aspirant", color: COLORS.Aspirant };
-    return { label: "Laggard", color: COLORS.Laggard };
+  const toMonthLabel = (monthKey) => {
+    if (!monthKey) return "";
+    const [year, month] = monthKey.split("-");
+    return `${MONTH_NAMES[Number(month) - 1]} ${year}`;
   };
 
-  const getTrendMeta = (trend) => {
-    if (trend === "UP") return { icon: "🔼", label: "Upward" };
-    if (trend === "DOWN") return { icon: "🔽", label: "Downward" };
-    return { icon: "➖", label: "Flat" };
+  const trendLabel = (trend) => {
+    if (trend === "UP") return "↗ up";
+    if (trend === "DOWN") return "↘ down";
+    return "→ flat";
   };
 
-  // ✅ TOOLTIP (KPI DRILLDOWN)
-  const CustomTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      const d = payload[0].payload;
-
-      return (
-        <div className="customTooltip">
-          <p><b>{d.name}</b></p>
-          <p>Score: {Number(d.score).toFixed(1)}</p>
-
-          <p style={{ marginTop: "8px", fontWeight: "600" }}>
-            KPI Breakdown:
-          </p>
-
-          <ul>
-            {d.kpis && d.kpis.length > 0 ? (
-              d.kpis.map((k, i) => (
-                <li key={i}>
-                  {k.name}: <b>{Number(k.value).toFixed(1)}</b>
-                </li>
-              ))
-            ) : (
-              <li>No KPI data</li>
-            )}
-          </ul>
-        </div>
-      );
-    }
-    return null;
+  const statusClass = (status) => {
+    if (status === "GREEN") return "status-green";
+    if (status === "YELLOW") return "status-yellow";
+    return "status-red";
   };
 
-  useEffect(() => {
-    fetch("http://localhost:3001/api/dashboard/summary")
+  const loadSummary = (monthKey = "") => {
+    setLoading(true);
+    const [year, month] = monthKey ? monthKey.split("-") : [];
+    const q =
+      monthKey
+        ? `?month=${Number(month)}&year=${Number(year)}`
+        : "";
+    fetch(`http://localhost:3001/api/dashboard/summary${q}`)
       .then((res) => res.json())
       .then((res) => {
-        console.log("API RESPONSE:", res);
-
-        // Backend returns departments as array
-        const deptArray = Array.isArray(res?.departments)
-          ? res.departments.map((d) => ({
-              id: d?.id,
-              name: d?.name || "Unknown Department",
-              score: Number(d?.score || 0),
-              trend: d?.trend || "FLAT",
-              trendSeries: Array.isArray(d?.trendSeries) ? d.trendSeries : [],
-              kpis: Array.isArray(d?.kpis) ? d.kpis : []
-            }))
-          : [];
-
-        // ✅ SORT (IMPORTANT FIX)
-        const sorted = [...deptArray].sort((a, b) => b.score - a.score);
-
-        // ✅ TOP 3
-        const top3 = sorted.slice(0, 3).map((d, i) => ({
-          rank: i + 1,
-          ...d
-        }));
-
-        const bottom3Count = Math.min(3, sorted.length);
-        const bottom3 = sorted.slice(-bottom3Count).map((d, i) => ({
-          rank: sorted.length - bottom3Count + i + 1,
-          ...d
-        }));
-
         setData({
           districtPI: Number(res?.districtPI || 0),
-          departments: sorted, // ✅ USE SORTED (FIXED)
-          top3,
-          bottom3
+          totalKpis: Number(res?.totalKpis || 0),
+          selectedMonth: res?.selectedMonth || null,
+          monthsAvailable: Array.isArray(res?.monthsAvailable) ? res.monthsAvailable : [],
+          kpiStatusCounts: res?.kpiStatusCounts || { green: 0, yellow: 0, red: 0, totalIndicators: 0 },
+          departments: Array.isArray(res?.departments) ? res.departments : [],
+          actionTracker: Array.isArray(res?.actionTracker) ? res.actionTracker : []
         });
-
+        if (!monthKey && res?.selectedMonth) {
+          setSelectedMonth(res.selectedMonth);
+        }
         setLoading(false);
       })
       .catch((err) => {
-        console.error("API ERROR:", err);
+        console.error("Dashboard load error:", err);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    loadSummary();
   }, []);
 
-  if (loading) {
-    return <div className="loading">Loading District Index...</div>;
-  }
+  useEffect(() => {
+    if (selectedMonth) {
+      loadSummary(selectedMonth);
+    }
+  }, [selectedMonth]);
+
+  const sortedDepartments = useMemo(
+    () => [...data.departments].sort((a, b) => b.score - a.score),
+    [data.departments]
+  );
 
   return (
-    <div className="container">
+    <div className="tpi-page">
+      <div className="tpi-title">TIRAP PERFORMANCE INDEX - MASTER DASHBOARD</div>
 
-      {/* HEADER */}
-      <div className="header">
-        <div>
-          <h1>District Performance Index</h1>
-          <p>Monthly Administrative Review Dashboard</p>
-        </div>
+      <div className="month-strip">
+        <span className="month-label">Reporting Month -></span>
+        <select
+          className="month-select"
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+        >
+          {data.monthsAvailable.map((m) => (
+            <option key={m} value={m}>
+              {toMonthLabel(m)}
+            </option>
+          ))}
+        </select>
+        <span className="month-help">Select month from dropdown to update entire dashboard</span>
+      </div>
 
-        <div className="scoreBox">
-          <div className="scoreValue">
-            {data.districtPI.toFixed(1)}
+      {loading ? (
+        <div className="loading">Loading dashboard...</div>
+      ) : (
+        <>
+          <div className="summary-row">
+            <div className="tpi-card">
+              <div className="tpi-card-head">TPI SCORE</div>
+              <div className="tpi-score">{data.districtPI.toFixed(1)}</div>
+            </div>
+
+            <div className="status-grid">
+              <div className="status-head green">GREEN</div>
+              <div className="status-head yellow">YELLOW</div>
+              <div className="status-head red">RED</div>
+              <div className="status-head total">TOTAL INDICATORS</div>
+              <div className="status-value green">{data.kpiStatusCounts.green}</div>
+              <div className="status-value yellow">{data.kpiStatusCounts.yellow}</div>
+              <div className="status-value red">{data.kpiStatusCounts.red}</div>
+              <div className="status-value total">{data.kpiStatusCounts.totalIndicators || data.totalKpis}</div>
+            </div>
           </div>
-          <span>District Score</span>
-        </div>
-      </div>
 
-      {/* TOP / BOTTOM */}
-      <div className="grid">
+          <div className="tabs">
+            <button
+              className={activeTab === "dashboard" ? "tab active" : "tab"}
+              onClick={() => setActiveTab("dashboard")}
+            >
+              Dashboard
+            </button>
+            <button
+              className={activeTab === "action-tracker" ? "tab active" : "tab"}
+              onClick={() => setActiveTab("action-tracker")}
+            >
+              Action Tracker
+            </button>
+          </div>
 
-        {/* TOP 3 */}
-        <div className="card greenCard">
-          <h2>🏆 Top 3 Performers</h2>
-
-          {data.top3.length === 0 ? (
-            <p>No data available</p>
-          ) : (
-            data.top3.map((d, i) => (
-              <div key={i} className="row greenRow">
-                <span>#{d.rank} {d.name}</span>
-                <b>{d.score.toFixed(1)}</b>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* BOTTOM 3 */}
-        <div className="card redCard">
-          <h2>⚠️ Bottom 3</h2>
-
-          {data.bottom3.length === 0 ? (
-            <p>No data available</p>
-          ) : (
-            data.bottom3.map((d, i) => (
-              <div key={i} className="row redRow">
-                <span>#{d.rank} {d.name}</span>
-                <b>{d.score.toFixed(1)}</b>
-              </div>
-            ))
-          )}
-        </div>
-
-      </div>
-
-      {/* CHART */}
-      <div className="chartBox">
-        <h2>Department-wise Comparison</h2>
-
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data.departments}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis domain={[0, 100]} />
-
-            <Tooltip content={<CustomTooltip />} />
-
-            <Bar dataKey="score">
-              {data.departments.map((entry, i) => (
-                <Cell key={i} fill={getCategory(entry.score).color} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* TABLE */}
-      <div className="tableBox">
-        <table>
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Department</th>
-              <th>Score</th>
-              <th>Trend</th>
-              <th>3M Sparkline</th>
-              <th>Category</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {data.departments.length === 0 ? (
-              <tr>
-                <td colSpan="6">No data available</td>
-              </tr>
-            ) : (
-              data.departments.map((d, i) => {
-                const cat = getCategory(d.score);
-                const trendMeta = getTrendMeta(d.trend);
-
-                return (
-                  <tr key={d.id || i}>
-                    <td>#{i + 1}</td>
-                    <td>{d.name}</td>
-                    <td>{d.score.toFixed(1)}</td>
-                    <td>{`${trendMeta.icon} ${trendMeta.label}`}</td>
-                    <td>
-                      <div className="sparklineBox">
-                        {d.trendSeries.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={36}>
-                            <LineChart data={d.trendSeries}>
-                              <Line
-                                type="monotone"
-                                dataKey="score"
-                                stroke={cat.color}
-                                strokeWidth={2}
-                                dot={{ r: 2 }}
-                              />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        ) : (
-                          <small>No trend data</small>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <span
-                        className="badge"
-                        style={{ backgroundColor: cat.color }}
-                      >
-                        {cat.label}
-                      </span>
-                    </td>
+          {activeTab === "dashboard" ? (
+            <div className="table-wrap">
+              <div className="section-title">KEY RESULT AREAS - ACHIEVEMENT BY DEPARTMENT</div>
+              <table className="tpi-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>KRA</th>
+                    <th>Owner</th>
+                    <th>Weight</th>
+                    <th>Indicators</th>
+                    <th>Green</th>
+                    <th>Yellow</th>
+                    <th>Red</th>
+                    <th>Avg Achievement</th>
+                    <th>KRA Score (0-100)</th>
+                    <th>Status</th>
+                    <th>Trend (3-mo)</th>
+                    <th>Top RED Indicator</th>
+                    <th>Action Status</th>
                   </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-
+                </thead>
+                <tbody>
+                  {sortedDepartments.map((d, idx) => (
+                    <tr key={d.id}>
+                      <td>{idx + 1}</td>
+                      <td className="kra">{d.kra}</td>
+                      <td>{d.owner}</td>
+                      <td>{Number(d.weight || 0).toFixed(0)}</td>
+                      <td>{d.indicators}</td>
+                      <td className="green-txt">{d.greenCount}</td>
+                      <td className="yellow-txt">{d.yellowCount}</td>
+                      <td className="red-txt">{d.redCount}</td>
+                      <td>{Number(d.achievement || 0).toFixed(1)}%</td>
+                      <td><b>{Number(d.score || 0).toFixed(1)}</b></td>
+                      <td className={statusClass(d.ragStatus)}>{d.ragStatus}</td>
+                      <td>{trendLabel(d.trend)}</td>
+                      <td className="top-red">{d.topRedIndicator}</td>
+                      <td>
+                        {d.redCount > 0 ? (
+                          <button
+                            className="tracker-link"
+                            onClick={() => setActiveTab("action-tracker")}
+                          >
+                            See Action Tracker
+                          </button>
+                        ) : (
+                          "No Action Needed"
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="table-wrap">
+              <div className="section-title">ACTION TRACKER - RED INDICATORS ({toMonthLabel(data.selectedMonth)})</div>
+              <table className="tpi-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>KRA</th>
+                    <th>Owner</th>
+                    <th>RED Indicator</th>
+                    <th>Score</th>
+                    <th>Status</th>
+                    <th>Action Owner</th>
+                    <th>Target Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.actionTracker.length === 0 ? (
+                    <tr>
+                      <td colSpan="8">No red indicators for selected month.</td>
+                    </tr>
+                  ) : (
+                    data.actionTracker.map((row, idx) => (
+                      <tr key={`${row.deptId}-${idx}`}>
+                        <td>{idx + 1}</td>
+                        <td className="kra">{row.kra}</td>
+                        <td>{row.owner}</td>
+                        <td className="top-red">{row.indicator}</td>
+                        <td>{Number(row.indicatorScore || 0).toFixed(1)}</td>
+                        <td className={statusClass(row.status)}>{row.status}</td>
+                        <td>{row.owner}</td>
+                        <td>T+7 days</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
