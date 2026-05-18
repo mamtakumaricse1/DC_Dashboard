@@ -1,12 +1,32 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./AdminDashboard.css";
+import AdminHistoryPanel from "./AdminHistoryPanel";
 
 const MONTH_NAMES = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 ];
 
-export default function AdminDashboard() {
+const getFiscalMonthKeys = () => {
+  const now = new Date();
+  const startYear = now.getMonth() + 1 >= 4 ? now.getFullYear() : now.getFullYear() - 1;
+  return [
+    `${startYear}-04`,
+    `${startYear}-05`,
+    `${startYear}-06`,
+    `${startYear}-07`,
+    `${startYear}-08`,
+    `${startYear}-09`,
+    `${startYear}-10`,
+    `${startYear}-11`,
+    `${startYear}-12`,
+    `${startYear + 1}-01`,
+    `${startYear + 1}-02`,
+    `${startYear + 1}-03`
+  ];
+};
+
+export default function AdminDashboard({ user, onLogout }) {
   const [selectedMonth, setSelectedMonth] = useState("");
   const [activeTab, setActiveTab] = useState("dashboard");
   const [data, setData] = useState({
@@ -82,31 +102,40 @@ export default function AdminDashboard() {
     () => [...data.departments].sort((a, b) => b.score - a.score),
     [data.departments]
   );
+  const monthsForDropdown = useMemo(
+    () => (data.monthsAvailable.length > 0 ? data.monthsAvailable : getFiscalMonthKeys()),
+    [data.monthsAvailable]
+  );
+
+  useEffect(() => {
+    if (!selectedMonth && monthsForDropdown.length > 0) {
+      setSelectedMonth(monthsForDropdown[0]);
+    }
+  }, [monthsForDropdown, selectedMonth]);
 
   return (
     <div className="tpi-page">
-      <div className="tpi-title">TIRAP PERFORMANCE INDEX - MASTER DASHBOARD</div>
-
-      <div className="month-strip">
-        <span className="month-label">Reporting Month -></span>
-        <select
-          className="month-select"
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-        >
-          {data.monthsAvailable.map((m) => (
-            <option key={m} value={m}>
-              {toMonthLabel(m)}
-            </option>
-          ))}
-        </select>
-        <span className="month-help">Select month from dropdown to update entire dashboard</span>
+      <div className="top-header">
+        <div className="header-left">
+          <div className="tpi-title">TIRAP PERFORMANCE INDEX - MASTER DASHBOARD</div>
+          {user?.username && (
+            <div className="header-subtitle">
+              Logged in as {user.username} (Admin)
+            </div>
+          )}
+        </div>
+        <div className="header-actions">
+          <button type="button" className="header-logout" onClick={onLogout}>
+            Logout
+          </button>
+        </div>
       </div>
 
-      {loading ? (
+      {loading && activeTab !== "history" ? (
         <div className="loading">Loading dashboard...</div>
       ) : (
         <>
+          {activeTab !== "history" && (
           <div className="summary-row">
             <div className="tpi-card">
               <div className="tpi-card-head">TPI SCORE</div>
@@ -123,7 +152,24 @@ export default function AdminDashboard() {
               <div className="status-value red">{data.kpiStatusCounts.red}</div>
               <div className="status-value total">{data.kpiStatusCounts.totalIndicators || data.totalKpis}</div>
             </div>
+
+            <div className="month-panel month-panel-inline">
+              <span className="month-label">Reporting Month -&gt;</span>
+              <select
+                className="month-select"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              >
+                {monthsForDropdown.map((m) => (
+                  <option key={m} value={m}>
+                    {toMonthLabel(m)}
+                  </option>
+                ))}
+              </select>
+              <span className="month-help">Select month from dropdown to update dashboard</span>
+            </div>
           </div>
+          )}
 
           <div className="tabs">
             <button
@@ -138,9 +184,20 @@ export default function AdminDashboard() {
             >
               Action Tracker
             </button>
+            <button
+              className={activeTab === "history" ? "tab active" : "tab"}
+              onClick={() => setActiveTab("history")}
+            >
+              History
+            </button>
           </div>
 
-          {activeTab === "dashboard" ? (
+          {activeTab === "history" ? (
+            <AdminHistoryPanel
+              summaryDepartments={data.departments}
+              monthsAvailable={monthsForDropdown}
+            />
+          ) : activeTab === "dashboard" ? (
             <div className="table-wrap">
               <div className="section-title">KEY RESULT AREAS - ACHIEVEMENT BY DEPARTMENT</div>
               <table className="tpi-table">

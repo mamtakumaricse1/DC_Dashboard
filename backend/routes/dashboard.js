@@ -66,6 +66,104 @@ const getFiscalMonthKeys = () => {
   ];
 };
 
+const MONTH_LABELS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+];
+
+const formatMonthKey = (monthKey) => {
+  if (!monthKey) return '';
+  const [year, month] = monthKey.split('-');
+  return `${MONTH_LABELS[Number(month) - 1]} ${year}`;
+};
+
+const scoreTrend = (current, previous) => {
+  if (previous === null || previous === undefined) return 'FLAT';
+  if (current > previous + 1) return 'UP';
+  if (current < previous - 1) return 'DOWN';
+  return 'FLAT';
+};
+
+const DASHBOARD_ROWS_SQL = `
+  SELECT 
+    d.dept_id,
+    d.name AS dept_name,
+    d.weight AS dept_weight,
+    k.kpi_id,
+    k.name AS kpi_name,
+    k.min_value,
+    k.max_value,
+    k.weight AS kpi_weight,
+    k.polarity,
+    pd.actual_value,
+    pd.entry_month,
+    pd.entry_year
+  FROM Departments d
+  JOIN KPIs k ON d.dept_id = k.dept_id
+  LEFT JOIN PerformanceData pd ON k.kpi_id = pd.kpi_id
+`;
+
+async function loadMonthsAvailable(db) {
+  let monthsAvailable = [];
+  try {
+    const monthMasterResult = await db.request().query(`
+      IF OBJECT_ID('ReportingMonths', 'U') IS NOT NULL
+          SELECT month_key, sort_order FROM ReportingMonths ORDER BY sort_order;
+      ELSE
+          SELECT CAST(NULL AS VARCHAR(7)) AS month_key, CAST(NULL AS INT) AS sort_order WHERE 1=0;
+    `);
+    monthsAvailable = monthMasterResult.recordset.map((r) => r.month_key).filter(Boolean);
+  } catch (e) {
+    /* fallback below */
+  }
+  if (monthsAvailable.length === 0) {
+    monthsAvailable = getFiscalMonthKeys();
+  }
+  return monthsAvailable;
+}
+
+function initDepartment(deptId, deptName, deptWeight) {
+  const meta = KRA_META[deptId] || {};
+  return {
+    dept_id: deptId,
+    name: deptName,
+    weight: Number(deptWeight),
+    kraCode: meta.code || 'NA',
+    kraLabel: meta.label || deptName,
+    owner: meta.owner || 'N/A',
+    monthly: {},
+    kpiIds: new Set()
+  };
+}
+
+function accumulateRow(departments, r) {
+  if (!departments[r.dept_id]) {
+    departments[r.dept_id] = initDepartment(r.dept_id, r.dept_name, r.dept_weight);
+  }
+  if (r.kpi_id) {
+    departments[r.dept_id].kpiIds.add(r.kpi_id);
+  }
+  if (r.entry_year === null || r.entry_month === null || r.actual_value === null) {
+    return;
+  }
+  const monthKey = `${r.entry_year}-${String(r.entry_month).padStart(2, '0')}`;
+  if (!departments[r.dept_id].monthly[monthKey]) {
+    departments[r.dept_id].monthly[monthKey] = { score: 0, weight: 0 };
+  }
+  const kpiScore = calcScore(r.actual_value, r.min_value, r.max_value, r.polarity);
+  const kpiWeight = Number(r.kpi_weight) > 0 ? Number(r.kpi_weight) : 1;
+  departments[r.dept_id].monthly[monthKey].score += kpiScore * kpiWeight;
+  departments[r.dept_id].monthly[monthKey].weight += kpiWeight;
+}
+
+function monthlyScoresFromDept(d) {
+  const monthlyScores = {};
+  Object.entries(d.monthly).forEach(([m, val]) => {
+    monthlyScores[m] = val.weight > 0 ? val.score / val.weight : 0;
+  });
+  return monthlyScores;
+}
+
 // ✅ TREND CALCULATION (current month vs previous 2/3 months average)
 const getTrend = (monthlyScores) => {
   const months = Object.keys(monthlyScores).sort().reverse();
@@ -160,6 +258,8 @@ router.get('/summary', async (req, res) => {
     let totalGreen = 0;
     let totalYellow = 0;
     let totalRed = 0;
+    let districtKpiScoreSum = 0;
+    let districtKpiWeightSum = 0;
 
     rows.forEach(r => {
       if (!departments[r.dept_id]) {
@@ -204,7 +304,7 @@ router.get('/summary', async (req, res) => {
         r.max_value,
         r.polarity
       );
-      const kpiWeight = 1;
+      const kpiWeight = Number(r.kpi_weight) > 0 ? Number(r.kpi_weight) : 1;
       departments[r.dept_id].monthly[monthKey].score += score * kpiWeight;
       departments[r.dept_id].monthly[monthKey].weight += kpiWeight;
 
@@ -217,6 +317,9 @@ router.get('/summary', async (req, res) => {
         else if (status === "YELLOW") totalYellow += 1;
         else totalRed += 1;
 
+        districtKpiScoreSum += score * kpiWeight;
+        districtKpiWeightSum += kpiWeight;
+
         departments[r.dept_id].monthKpis.push({
           kpi_id: r.kpi_id,
           name: r.kpi_name,
@@ -226,8 +329,6 @@ router.get('/summary', async (req, res) => {
       }
     });
 
-    let districtPI = 0;
-    let totalDeptWeight = 0;
     const actionTracker = [];
 
     const deptArray = Object.entries(departments).map(([id, d]) => {
@@ -245,7 +346,7 @@ router.get('/summary', async (req, res) => {
           : (monthlyScores[months[0]] || 0);
 
       const trend = getTrend(monthlyScores);
-      const trendSeries = months.slice(0, 3).reverse().map((month) => ({
+      const trendSeries = months.slice(0, 6).reverse().map((month) => ({
         month,
         score: Number((monthlyScores[month] || 0).toFixed(2))
       }));
@@ -261,9 +362,6 @@ router.get('/summary', async (req, res) => {
       const redCount = redKpis.length;
       const topRedIndicator = redKpis[0]?.name || "-";
       const actionStatus = redCount > 0 ? "See Action Tracker" : "No Action Needed";
-
-      districtPI += score * d.weight;
-      totalDeptWeight += d.weight;
 
       redKpis.forEach((kpi) => {
         actionTracker.push({
@@ -282,7 +380,7 @@ router.get('/summary', async (req, res) => {
         name: d.name,
         kra: `${d.kraCode} - ${d.kraLabel}`,
         owner: d.owner,
-        weight: Number(d.weight || 0),
+        weight: d.kpiIds.size,
         kpiCount: d.kpiIds.size,
         indicators: d.monthKpis.length,
         greenCount,
@@ -298,10 +396,10 @@ router.get('/summary', async (req, res) => {
       };
     });
 
-    if (totalDeptWeight > 0) {
-      districtPI = districtPI / totalDeptWeight;
+    let districtPI = 0;
+    if (districtKpiWeightSum > 0) {
+      districtPI = districtKpiScoreSum / districtKpiWeightSum;
     }
-
     districtPI = Number(districtPI.toFixed(2));
     deptArray.sort((a, b) => b.score - a.score);
     const top3 = deptArray.slice(0, 3);
@@ -326,6 +424,63 @@ router.get('/summary', async (req, res) => {
 
   } catch (err) {
     console.error("🔥 Dashboard Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =====================================================
+// HISTORY — monthly KRA scores per department (3 or 6 months)
+// =====================================================
+router.get('/history', async (req, res) => {
+  try {
+    const requested = Number(req.query.months || 6);
+    const monthCount = requested === 3 ? 3 : 6;
+
+    const db = await getPool();
+    const result = await db.request().query(DASHBOARD_ROWS_SQL);
+    const monthsAvailable = await loadMonthsAvailable(db);
+    const monthKeys = monthsAvailable.slice(-monthCount);
+
+    const departments = {};
+    result.recordset.forEach((r) => accumulateRow(departments, r));
+
+    const departmentsOut = Object.entries(departments)
+      .map(([id, d]) => {
+        const monthlyScores = monthlyScoresFromDept(d);
+        const series = monthKeys.map((m, i) => {
+          const score = Number((monthlyScores[m] || 0).toFixed(2));
+          const prevScore =
+            i > 0 ? Number((monthlyScores[monthKeys[i - 1]] || 0).toFixed(2)) : null;
+          return {
+            month: m,
+            label: formatMonthKey(m),
+            score,
+            trend: scoreTrend(score, prevScore)
+          };
+        });
+        const first = series[0]?.score ?? 0;
+        const last = series[series.length - 1]?.score ?? 0;
+        const shortName = (d.name || id).split('/')[0].trim();
+
+        return {
+          id,
+          name: d.name,
+          shortName,
+          kra: `${d.kraCode} - ${d.kraLabel}`,
+          series,
+          overallTrend: scoreTrend(last, first),
+          latestScore: last
+        };
+      })
+      .sort((a, b) => b.latestScore - a.latestScore);
+
+    res.json({
+      monthCount,
+      months: monthKeys,
+      departments: departmentsOut
+    });
+  } catch (err) {
+    console.error('🔥 History Error:', err);
     res.status(500).json({ error: err.message });
   }
 });

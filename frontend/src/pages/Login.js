@@ -26,13 +26,7 @@ export default function Login({ setUser }) {
       }
 
       const data = await res.json();
-
-      // ✅ store user
       setUser(data);
-
-      // ✅ optional: persist login
-      localStorage.setItem("user", JSON.stringify(data));
-
     } catch (err) {
       setError(err.message);
     } finally {
@@ -59,9 +53,14 @@ export default function Login({ setUser }) {
           placeholder="Password"
           value={form.password}
           onChange={e => setForm({ ...form, password: e.target.value })}
+          onKeyDown={(e) => e.key === 'Enter' && login()}
         />
 
-        <button className="button" onClick={login} disabled={loading}>
+        <button
+          className="button"
+          onClick={login}
+          disabled={loading}
+        >
           {loading ? "Logging in..." : "Login"}
         </button>
 

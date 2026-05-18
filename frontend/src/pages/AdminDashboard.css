@@ -1,3 +1,12 @@
+.top-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #1f4e79;
+  padding: 8px 14px;
+}
+
 .tpi-page {
   min-height: 100vh;
   background: #d7dbe3;
@@ -6,43 +15,343 @@
 }
 
 .tpi-title {
-  background: #1f4e79;
   color: #fff;
-  text-align: center;
+  text-align: left;
   font-weight: 700;
   letter-spacing: 0.3px;
-  padding: 10px 12px;
-  font-size: 34px;
+  padding: 4px 6px;
+  font-size: 32px;
 }
 
-.month-strip {
+.header-logout {
+  background: #fff;
+  color: #1f4e79;
+  border: 1px solid #8ea0b8;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.header-logout:hover {
+  background: #eef4fb;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.header-subtitle {
+  color: #c3d1df;
+  font-size: 13px;
+  padding: 2px 6px 4px;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dept-page .header-logout {
+  flex-shrink: 0;
+}
+
+/* History tab */
+.history-panel {
+  margin: 0 18px 18px;
+}
+
+.history-dept-table-wrap {
+  margin-bottom: 16px;
+}
+
+.history-dept-table .history-dept-cell-name {
+  font-weight: 700;
+  max-width: 220px;
+}
+
+.history-row-clickable {
+  cursor: pointer;
+}
+
+.history-row-clickable:hover {
+  background: #e8f0fa !important;
+}
+
+.history-row-selected {
+  cursor: pointer;
+  background: #dce9f7 !important;
+  outline: 2px solid #1f4e79;
+}
+
+.history-error {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  background: #fff3cd;
+  border: 1px solid #e6c200;
+  color: #6b5000;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.history-empty {
+  padding: 24px;
+  text-align: center;
+  color: #4a5568;
+}
+
+.history-charts-section {
+  border: 1px solid #7b8aa1;
+  background: #f5f7fa;
+}
+
+.history-loading {
+  text-align: center;
+  padding: 40px;
+  font-weight: 700;
+  color: #1f4e79;
+}
+
+.history-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.history-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.history-range-label {
+  font-weight: 700;
+  color: #1f4e79;
+}
+
+.history-range-btn {
+  border: 1px solid #1f4e79;
+  background: #e6ebf3;
+  color: #1f4e79;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.history-range-btn.active {
+  background: #1f4e79;
+  color: #fff;
+}
+
+.history-back-btn {
+  border: 1px solid #8ea0b8;
+  background: #fff;
+  padding: 6px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #1f4e79;
+}
+
+.history-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+  border: 1px solid #7b8aa1;
+  background: #f5f7fa;
+  min-height: 480px;
+}
+
+.history-dept-list {
+  border-right: 1px solid #7b8aa1;
+  background: #eef2f7;
+  padding: 10px;
+  max-height: 560px;
+  overflow-y: auto;
+}
+
+.history-list-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #1f4e79;
+  margin-bottom: 8px;
+  padding: 4px;
+}
+
+.history-dept-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 2px 8px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid #b8c4d4;
+  background: #fff;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.history-dept-item:hover {
+  border-color: #1f4e79;
+  background: #f0f6fc;
+}
+
+.history-dept-item.active {
+  border-color: #1f4e79;
+  background: #dce9f7;
+  box-shadow: inset 3px 0 0 #1f4e79;
+}
+
+.history-dept-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: #1d2c3b;
+  grid-column: 1 / -1;
+}
+
+.history-dept-trend {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.history-dept-score {
+  font-weight: 700;
+  font-size: 14px;
+  color: #1f4e79;
+}
+
+.trend-UP { color: #2d8a3f; }
+.trend-DOWN { color: #8f1f22; }
+.trend-FLAT { color: #a16a00; }
+
+.history-chart-area {
+  padding: 12px 14px 16px;
+}
+
+.history-hint {
+  font-size: 13px;
+  color: #4a5568;
+  margin: 0 0 12px;
+  padding: 0 4px;
+}
+
+.history-chart-wrap {
+  background: #fff;
+  border: 1px solid #c5cdd8;
+  padding: 8px;
+}
+
+.history-chart-detail {
+  margin-top: 16px;
+}
+
+.history-progress-list {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history-progress-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 48px 24px;
+  align-items: center;
+  gap: 10px;
+}
+
+.history-progress-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.history-progress-track {
+  height: 22px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.history-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.history-progress-score {
+  font-weight: 700;
+  font-size: 13px;
+  text-align: right;
+}
+
+.history-progress-trend {
+  font-weight: 700;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .history-layout {
+    grid-template-columns: 1fr;
+  }
+  .history-dept-list {
+    max-height: 200px;
+    border-right: 0;
+    border-bottom: 1px solid #7b8aa1;
+  }
+}
+
+.month-panel {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 18px;
+  justify-content: flex-end;
+}
+
+.month-panel-inline {
+  margin-left: auto;
+  background: #d7dbe3;
+  padding: 6px 8px;
+  border: 1px dashed #8ea0b8;
 }
 
 .month-label {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  color: #234b77;
+  color: #d8e7f8;
 }
 
 .month-select {
   border: 1px solid #d0c900;
   background: #fff200;
-  min-width: 160px;
-  height: 36px;
+  min-width: 170px;
+  height: 34px;
   padding: 0 10px;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: #0039a6;
 }
 
 .month-help {
-  color: #6d6d6d;
+  color: #c3d1df;
   font-style: italic;
-  font-size: 14px;
+  font-size: 12px;
+}
+
+.month-panel-inline .month-label {
+  color: #234b77;
+}
+
+.month-panel-inline .month-help {
+  color: #6d6d6d;
 }
 
 .summary-row {
@@ -214,5 +523,20 @@
 @media (max-width: 1200px) {
   .status-grid {
     grid-template-columns: repeat(2, 120px);
+  }
+
+  .top-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .month-panel {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .month-panel-inline {
+    margin-left: 0;
   }
 }

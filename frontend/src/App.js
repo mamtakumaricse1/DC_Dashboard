@@ -3,21 +3,32 @@ import { useState } from 'react';
 
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
-import DeptEntry from './pages/DeptEntry';
+import DeptDashboard from './pages/DeptDashboard';
 
 function App() {
   const [user, setUser] = useState(null);
 
-  if (!user) return <Login setUser={setUser} />;
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    setUser(null);
+  };
 
-  // ✅ ADMIN
-  if (user.role === 'ADMIN') {
-    return <AdminDashboard />;
+  const handleLogin = (loggedInUser) => {
+    setUser(loggedInUser);
+  };
+
+  if (!user) {
+    return <Login setUser={handleLogin} />;
   }
 
-  // ✅ DEPARTMENT USER
-  if (user.role === 'DEPT') {
-    return <DeptEntry deptId={user.dept_id} />;
+  const role = String(user.role || '').trim().toUpperCase();
+
+  if (role === 'ADMIN') {
+    return <AdminDashboard user={user} onLogout={handleLogout} />;
+  }
+
+  if (role === 'DEPT') {
+    return <DeptDashboard user={user} onLogout={handleLogout} />;
   }
 
   return <div>Unauthorized Role</div>;
