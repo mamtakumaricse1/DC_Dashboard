@@ -13,6 +13,9 @@ GO
 -- ==============================
 -- DROP EXISTING TABLES
 -- ==============================
+IF OBJECT_ID('DistrictConfig', 'U') IS NOT NULL DROP TABLE DistrictConfig;
+IF OBJECT_ID('DeptMonthlySubmissions', 'U') IS NOT NULL DROP TABLE DeptMonthlySubmissions;
+IF OBJECT_ID('ActionItems', 'U') IS NOT NULL DROP TABLE ActionItems;
 IF OBJECT_ID('PerformanceData', 'U') IS NOT NULL DROP TABLE PerformanceData;
 IF OBJECT_ID('ReportingMonths', 'U') IS NOT NULL DROP TABLE ReportingMonths;
 IF OBJECT_ID('KPIs', 'U') IS NOT NULL DROP TABLE KPIs;
@@ -55,6 +58,8 @@ CREATE TABLE PerformanceData (
     id INT PRIMARY KEY IDENTITY(1,1),
     kpi_id VARCHAR(400) NOT NULL,
     actual_value FLOAT NOT NULL,
+    numerator_value FLOAT NULL,
+    denominator_value FLOAT NULL,
     entry_month INT NOT NULL,
     entry_year INT NOT NULL,
     UNIQUE (kpi_id, entry_month, entry_year),
@@ -67,6 +72,60 @@ CREATE TABLE ReportingMonths (
     year_num INT NOT NULL,
     month_name VARCHAR(10) NOT NULL,
     sort_order TINYINT NOT NULL UNIQUE
+);
+
+-- District-level settings (reusable for other districts via district_id)
+CREATE TABLE DistrictConfig (
+    district_id VARCHAR(30) PRIMARY KEY,
+    district_name NVARCHAR(150) NOT NULL,
+    state_name NVARCHAR(100) NULL,
+    app_title NVARCHAR(200) NOT NULL,
+    submission_opens_day TINYINT NOT NULL DEFAULT 1,
+    submission_deadline_day TINYINT NOT NULL DEFAULT 1,
+    submission_deadline_hour TINYINT NOT NULL DEFAULT 23,
+    submission_deadline_minute TINYINT NOT NULL DEFAULT 0,
+    target_due_day TINYINT NOT NULL DEFAULT 1,
+    target_due_hour TINYINT NOT NULL DEFAULT 12,
+    target_due_minute TINYINT NOT NULL DEFAULT 0,
+    fiscal_year_start_month TINYINT NOT NULL DEFAULT 4,
+    created_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    updated_at DATETIME2 NOT NULL DEFAULT SYSDATETIME()
+);
+
+-- One official KPI submission per department per reporting month
+CREATE TABLE DeptMonthlySubmissions (
+    dept_id VARCHAR(10) NOT NULL,
+    month_key CHAR(7) NOT NULL,
+    submitted_by INT NULL,
+    submitted_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    updated_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    is_late BIT NOT NULL DEFAULT 0,
+    PRIMARY KEY (dept_id, month_key),
+    FOREIGN KEY (dept_id) REFERENCES Departments(dept_id)
+);
+
+-- RED indicators: DC sets target score/plan/date; tracked across months until closed
+CREATE TABLE ActionItems (
+    action_id INT PRIMARY KEY IDENTITY(1,1),
+    dept_id VARCHAR(10) NOT NULL,
+    kpi_id VARCHAR(400) NOT NULL,
+    month_key CHAR(7) NOT NULL,
+    indicator_name NVARCHAR(255) NOT NULL,
+    indicator_score FLOAT NOT NULL,
+    status VARCHAR(10) NOT NULL DEFAULT 'RED',
+    action_owner NVARCHAR(150) NULL,
+    action_plan NVARCHAR(500) NULL,
+    target_score FLOAT NULL,
+    target_date DATE NULL,
+    completion_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    actual_score FLOAT NULL,
+    deviation FLOAT NULL,
+    review_month CHAR(7) NULL,
+    dc_remarks NVARCHAR(500) NULL,
+    created_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    updated_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+    UNIQUE (kpi_id, month_key),
+    FOREIGN KEY (dept_id) REFERENCES Departments(dept_id)
 );
 
 -- ==============================
@@ -90,24 +149,44 @@ INSERT INTO Departments (dept_id, name, weight) VALUES
 ('D14', 'District Governance / DC Office', 5);
 
 -- ==============================
--- USERS (one user per department + admin)
+-- USERS (passwords hashed by scripts/hash-users.js after this SQL runs)
+-- Username format: d##_short_name — dept_id is visible in the login name.
+-- Password: admin = admin123 | all dept users = 123
+-- ==============================
+-- | Username              | Dept | Department                          |
+-- |-----------------------|------|-------------------------------------|
+-- | admin                 | —    | District Commissioner (ADMIN)       |
+-- | d01_health_nhm        | D01  | Health & NHM                        |
+-- | d02_school_education  | D02  | School Education                    |
+-- | d03_icds_wcd          | D03  | ICDS / Women & Child Development    |
+-- | d04_social_justice    | D04  | Social Justice / De-addiction       |
+-- | d05_sanitation_ulb    | D05  | Rural Sanitation / ULB              |
+-- | d06_pwd_infra         | D06  | PWD / PMGSY / Infrastructure        |
+-- | d07_power_discom      | D07  | Power Department / DISCOM           |
+-- | d08_police            | D08  | Police / Law & Order                |
+-- | d09_agriculture       | D09  | Agriculture / Allied Livelihoods    |
+-- | d10_food_welfare      | D10  | Food & Civil Supplies / Welfare     |
+-- | d11_revenue           | D11  | Revenue / District Administration   |
+-- | d12_transport_dlr     | D12  | DLR / Transport / Citizen Services  |
+-- | d13_disaster          | D13  | Disaster Management                 |
+-- | d14_dc_office         | D14  | District Governance / DC Office       |
 -- ==============================
 INSERT INTO Users (username, password, role, dept_id) VALUES
 ('admin', 'admin123', 'ADMIN', NULL),
-('health_user', '123', 'DEPT', 'D01'),
-('education_user', '123', 'DEPT', 'D02'),
-('icds_user', '123', 'DEPT', 'D03'),
-('social_justice_user', '123', 'DEPT', 'D04'),
-('sanitation_user', '123', 'DEPT', 'D05'),
-('infra_user', '123', 'DEPT', 'D06'),
-('power_user', '123', 'DEPT', 'D07'),
-('police_user', '123', 'DEPT', 'D08'),
-('agri_user', '123', 'DEPT', 'D09'),
-('welfare_user', '123', 'DEPT', 'D10'),
-('revenue_user', '123', 'DEPT', 'D11'),
-('transport_user', '123', 'DEPT', 'D12'),
-('disaster_user', '123', 'DEPT', 'D13'),
-('dc_office_user', '123', 'DEPT', 'D14');
+('d01_health_nhm', '123', 'DEPT', 'D01'),
+('d02_school_education', '123', 'DEPT', 'D02'),
+('d03_icds_wcd', '123', 'DEPT', 'D03'),
+('d04_social_justice', '123', 'DEPT', 'D04'),
+('d05_sanitation_ulb', '123', 'DEPT', 'D05'),
+('d06_pwd_infra', '123', 'DEPT', 'D06'),
+('d07_power_discom', '123', 'DEPT', 'D07'),
+('d08_police', '123', 'DEPT', 'D08'),
+('d09_agriculture', '123', 'DEPT', 'D09'),
+('d10_food_welfare', '123', 'DEPT', 'D10'),
+('d11_revenue', '123', 'DEPT', 'D11'),
+('d12_transport_dlr', '123', 'DEPT', 'D12'),
+('d13_disaster', '123', 'DEPT', 'D13'),
+('d14_dc_office', '123', 'DEPT', 'D14');
 
 -- ==============================
 -- KPIs + PerformanceData (REQUIRED — not in this SQL file)
@@ -154,6 +233,17 @@ INSERT INTO ReportingMonths (month_key, month_num, year_num, month_name, sort_or
 SELECT month_key, month_num, year_num, month_name, sort_order
 FROM @ReportingSeed
 ORDER BY sort_order;
+
+-- Default Tirap district — copy row and change district_id for another district
+INSERT INTO DistrictConfig (
+    district_id, district_name, state_name, app_title,
+    submission_opens_day, submission_deadline_day, submission_deadline_hour, submission_deadline_minute,
+    target_due_day, target_due_hour, target_due_minute, fiscal_year_start_month
+) VALUES (
+    'tirap', N'Tirap District', N'Arunachal Pradesh', N'Tirap Performance Index',
+    1, 1, 23, 0,
+    1, 12, 0, 4
+);
 
 -- ==============================
 -- VERIFY (run seed-100-kpis.js first for KPI / performance counts)

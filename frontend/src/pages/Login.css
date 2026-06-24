@@ -3,79 +3,78 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #eef3ff, #f7f9fc);
+  background: var(--color-bg);
 }
 
-/* CARD */
 .login-card {
   width: 100%;
   max-width: 380px;
-  background: white;
-  padding: 30px;
-  border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  background: var(--color-surface);
+  padding: 36px 32px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   text-align: center;
+  border: 1px solid var(--color-border);
 }
 
-/* TITLE */
 .login-card h2 {
-  margin-bottom: 6px;
-  font-size: 20px;
-  color: #333;
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-text);
 }
 
-/* SUBTITLE */
 .subtitle {
-  font-size: 13px;
-  color: #777;
-  margin-bottom: 20px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 24px;
 }
 
-/* INPUT */
 .input {
   width: 100%;
-  padding: 12px;
+  padding: 11px 14px;
   margin-bottom: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
   outline: none;
-  transition: 0.2s;
+  transition: border-color 0.15s;
+  font-family: inherit;
 }
 
 .input:focus {
-  border-color: #2d7ff9;
-  box-shadow: 0 0 0 2px rgba(45,127,249,0.2);
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
 }
 
-/* BUTTON */
 .button {
   width: 100%;
-  padding: 12px;
-  background: #2d7ff9;
+  padding: 11px;
+  background: var(--color-primary);
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 15px;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: 0.2s;
+  transition: background 0.15s;
+  font-family: inherit;
 }
 
-.button:hover {
-  background: #1a68e5;
+.button:hover:not(:disabled) {
+  background: var(--color-primary-light);
 }
 
 .button:disabled {
-  background: #9bbcf7;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
-/* ERROR */
 .error {
   margin-top: 12px;
-  color: #e74c3c;
-  font-size: 13px;
-  background: #ffecec;
-  padding: 8px;
-  border-radius: 6px;
+  color: var(--color-red);
+  font-size: 0.82rem;
+  background: var(--color-red-bg);
+  padding: 10px;
+  border-radius: var(--radius-sm);
 }

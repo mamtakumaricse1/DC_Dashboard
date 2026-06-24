@@ -27,7 +27,7 @@ const PDF = {
     'Teacher Attendance Rate (avg across govt schools)',
     'Student Attendance Rate (Classes 1-8)',
     'FLN Reading Proficiency, Class 3 (NIPUN Bharat)',
-    'FLN Numeracy Proficiency, Class 3 (NIPUN Bharat)',
+    'Student Retention Rate',
     'Schools with Functional Toilets (separate boy/girl)',
     'Schools with Drinking Water',
     'Class 10 Board Pass Rate (annual; reported in March-April)',

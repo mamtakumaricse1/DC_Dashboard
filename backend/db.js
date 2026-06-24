@@ -1,30 +1,64 @@
+/**
+
+ * SQL Server connection pool (singleton).
+
+ * Retries every 3s if the database is not yet available at startup.
+
+ */
+
 const sql = require('mssql');
 
-const config = {
-  user: 'sa',
-  password: 'password',
-  server: 'localhost',
-  database: 'DistrictDB4',
-  options: {
-    instanceName: 'SQLEXPRESS',
-    trustServerCertificate: true
-  }
-};
+const { db: dbConfig } = require('./config');
+
+
 
 let pool;
+let connecting = null;
 
-async function getPool() {
-  if (pool) return pool;
-
-  try {
-    pool = await new sql.ConnectionPool(config).connect();
-    console.log("✅ DB Connected");
-    return pool;
-  } catch (err) {
-    console.log("❌ DB failed. Retrying in 3s...", err.message);
-    await new Promise(res => setTimeout(res, 3000));
-    return getPool();
-  }
+async function connectPool() {
+  const next = await new sql.ConnectionPool(dbConfig).connect();
+  console.log(`DB connected (${dbConfig.database})`);
+  return next;
 }
 
-module.exports = { sql, getPool };
+async function getPool() {
+  if (pool?.connected) return pool;
+
+  if (pool && !pool.connected) {
+    try {
+      await pool.close();
+    } catch {
+      /* ignore stale pool close errors */
+    }
+    pool = null;
+  }
+
+  if (connecting) return connecting;
+
+  connecting = (async () => {
+    try {
+      pool = await connectPool();
+      return pool;
+    } catch (err) {
+      console.log('DB failed, retrying in 3s...', err.message);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      pool = await connectPool();
+      return pool;
+    } finally {
+      connecting = null;
+    }
+  })();
+
+  return connecting;
+}
+
+/** Drop pool after request errors (e.g. connection lost). */
+function resetPool() {
+  pool = null;
+  connecting = null;
+}
+
+
+
+module.exports = { sql, getPool, resetPool };
+

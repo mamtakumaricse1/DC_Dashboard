@@ -1,33 +1,21 @@
-import React, { useEffect, useMemo, useState } from "react";
+/**
+ * Admin History tab — 3/6 month KRA trend charts with drill-down per department.
+ * Load order: /history API → parallel monthly summaries → dashboard trendSeries fallback.
+ */
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
+  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis
 } from "recharts";
-
-const MONTH_NAMES = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-];
-
-const TREND_COLOR = {
-  UP: "#2d8a3f",
-  DOWN: "#8f1f22",
-  FLAT: "#a16a00"
-};
-
-const API_BASE = "http://localhost:3001/api/dashboard";
-
-const toMonthLabel = (monthKey) => {
-  if (!monthKey) return "";
-  const [year, month] = monthKey.split("-");
-  return `${MONTH_NAMES[Number(month) - 1]} ${year}`;
-};
+import { deptColorMap } from "../constants/chartColors";
+import { bindProgressFill } from "../utils/cssVars";
+import { DASHBOARD_API, fetchDashboardSummary, fetchWithAuth, toMonthLabel } from "../utils/api";
 
 const scoreTrend = (current, previous) => {
   if (previous === null || previous === undefined) return "FLAT";
@@ -41,6 +29,55 @@ const trendArrow = (trend) => {
   if (trend === "DOWN") return "↘ Declining";
   return "→ Stable";
 };
+
+const HISTORY_TOOLTIP_CURSOR = { fill: "rgba(30, 58, 95, 0.06)" };
+
+/** Solid tooltip card — avoids Recharts default semi-transparent tooltip on month hover. */
+function HistoryChartTooltip({ active, payload, label, variant = "multi", departments = [] }) {
+  if (!active || !payload?.length) return null;
+
+  const rows = payload
+    .filter((entry) => entry.value != null && entry.value !== "")
+    .map((entry) => {
+      if (variant === "detail") {
+        const trend = entry.payload?.trend || "FLAT";
+        return {
+          key: entry.dataKey,
+          color: entry.color || entry.fill,
+          name: "KRA Score",
+          value: `${Number(entry.value).toFixed(1)} (${trend})`
+        };
+      }
+      const dept = departments.find((d) => d.id === entry.dataKey);
+      return {
+        key: entry.dataKey,
+        color: entry.color || entry.fill,
+        name: dept?.shortName || dept?.name || entry.name,
+        value: Number(entry.value).toFixed(1)
+      };
+    });
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="history-chart-tooltip" role="tooltip">
+      <div className="history-chart-tooltip__label">{label}</div>
+      <ul className="history-chart-tooltip__list">
+        {rows.map((row) => (
+          <li key={row.key} className="history-chart-tooltip__item">
+            <span
+              className="history-chart-tooltip__swatch"
+              style={{ background: row.color }}
+              aria-hidden
+            />
+            <span className="history-chart-tooltip__name">{row.name}</span>
+            <span className="history-chart-tooltip__value">{row.value}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 const getLastNCalendarMonthKeys = (n) => {
   const keys = [];
@@ -63,22 +100,20 @@ const resolveMonthKeys = (monthCount, monthsAvailable) => {
   return getLastNCalendarMonthKeys(monthCount);
 };
 
-const buildSeriesForMonthKeys = (monthKeys, scoresByMonth, latestFallback = 0) => {
-  let lastKnown = latestFallback;
+/** Align monthly scores to chart month keys; missing months stay null (not zero). */
+const buildSeriesForMonthKeys = (monthKeys, scoresByMonth) => {
   return monthKeys.map((m, i) => {
     const raw = scoresByMonth[m];
-    const score =
-      raw !== undefined && raw !== null
-        ? Number(raw)
-        : (i > 0 ? lastKnown : latestFallback);
-    lastKnown = score;
-    const prev = i > 0 ? scoresByMonth[monthKeys[i - 1]] ?? lastKnown : null;
-    const prevScore = prev !== undefined && prev !== null ? Number(prev) : null;
+    const score = raw !== undefined && raw !== null ? Number(raw) : null;
+    const prevMonth = i > 0 ? monthKeys[i - 1] : null;
+    const prevRaw = prevMonth != null ? scoresByMonth[prevMonth] : undefined;
+    const prevScore =
+      prevRaw !== undefined && prevRaw !== null ? Number(prevRaw) : null;
     return {
       month: m,
       label: toMonthLabel(m),
-      score: Number(score.toFixed(2)),
-      trend: scoreTrend(score, prevScore)
+      score: score != null ? Number(score.toFixed(2)) : null,
+      trend: score != null && prevScore != null ? scoreTrend(score, prevScore) : "FLAT"
     };
   });
 };
@@ -89,23 +124,24 @@ const normalizeDepartments = (departments, monthKeys) => {
   return departments.map((d) => {
     const scoresByMonth = {};
     (d.series || []).forEach((point) => {
-      if (point?.month) scoresByMonth[point.month] = Number(point.score || 0);
+      if (point?.month) {
+        scoresByMonth[point.month] =
+          point.score != null ? Number(point.score) : null;
+      }
     });
-    const series = buildSeriesForMonthKeys(
-      monthKeys,
-      scoresByMonth,
-      Number(d.latestScore ?? d.score ?? 0)
-    );
-    const first = series[0]?.score ?? 0;
-    const last = series[series.length - 1]?.score ?? 0;
+    const series = buildSeriesForMonthKeys(monthKeys, scoresByMonth);
+    const scored = series.filter((p) => p.score != null);
+    const first = scored[0]?.score ?? null;
+    const last = scored[scored.length - 1]?.score ?? null;
     return {
       id: d.id,
       name: d.name,
       shortName: d.shortName || (d.name || d.id).split("/")[0].trim(),
       kra: d.kra,
       series,
-      overallTrend: d.overallTrend || scoreTrend(last, first),
-      latestScore: last
+      overallTrend: d.overallTrend || (first != null && last != null ? scoreTrend(last, first) : "FLAT"),
+      latestScore: d.latestScore != null ? d.latestScore : last,
+      latestScoreMonth: d.latestScoreMonth || scored[scored.length - 1]?.month || null
     };
   });
 };
@@ -117,38 +153,32 @@ function buildFallbackFromSummary(summaryDepartments, monthKeys) {
   return summaryDepartments.map((d) => {
     const scoresByMonth = {};
     (d.trendSeries || []).forEach((point) => {
-      if (point?.month) scoresByMonth[point.month] = Number(point.score || 0);
+      if (point?.month) {
+        scoresByMonth[point.month] =
+          point.score != null ? Number(point.score) : null;
+      }
     });
-    const series = buildSeriesForMonthKeys(
-      monthKeys,
-      scoresByMonth,
-      Number(d.score || 0)
-    );
-    const first = series[0]?.score ?? 0;
-    const last = series[series.length - 1]?.score ?? 0;
+    const series = buildSeriesForMonthKeys(monthKeys, scoresByMonth);
+    const scored = series.filter((p) => p.score != null);
+    const first = scored[0]?.score ?? null;
+    const last = scored[scored.length - 1]?.score ?? null;
     return {
       id: d.id,
       name: d.name,
       shortName: (d.name || d.id).split("/")[0].trim(),
       kra: d.kra,
       series,
-      overallTrend: d.trend || scoreTrend(last, first),
-      latestScore: Number(d.score || last)
+      overallTrend: d.trend || (first != null && last != null ? scoreTrend(last, first) : "FLAT"),
+      latestScore: d.score != null ? Number(d.score) : last
     };
   });
 }
 
+/** Fallback when /history is unavailable — one summary call per month in parallel. */
 async function buildHistoryFromMonthlySummaries(monthKeys) {
   const snapshots = await Promise.all(
     monthKeys.map(async (mk) => {
-      const [year, month] = mk.split("-");
-      const res = await fetch(
-        `${API_BASE}/summary?month=${Number(month)}&year=${Number(year)}`
-      );
-      if (!res.ok) {
-        throw new Error(`Summary failed for ${mk} (${res.status})`);
-      }
-      const data = await res.json();
+      const data = await fetchDashboardSummary(mk);
       return { month: mk, departments: data.departments || [] };
     })
   );
@@ -171,20 +201,21 @@ async function buildHistoryFromMonthlySummaries(monthKeys) {
 
   const departments = Object.values(deptMap)
     .map((dept) => {
-      const series = buildSeriesForMonthKeys(monthKeys, dept.points, 0);
-      const first = series[0]?.score ?? 0;
-      const last = series[series.length - 1]?.score ?? 0;
+      const series = buildSeriesForMonthKeys(monthKeys, dept.points);
+      const scored = series.filter((p) => p.score != null);
+      const first = scored[0]?.score ?? null;
+      const last = scored[scored.length - 1]?.score ?? null;
       return {
         id: dept.id,
         name: dept.name,
         shortName: dept.shortName,
         kra: dept.kra,
         series,
-        overallTrend: scoreTrend(last, first),
+        overallTrend: first != null && last != null ? scoreTrend(last, first) : "FLAT",
         latestScore: last
       };
     })
-    .sort((a, b) => b.latestScore - a.latestScore);
+    .sort((a, b) => (b.latestScore ?? -1) - (a.latestScore ?? -1));
 
   return { months: monthKeys, departments };
 }
@@ -198,6 +229,12 @@ export default function AdminHistoryPanel({
   const [history, setHistory] = useState({ months: [], departments: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const summaryRef = useRef(summaryDepartments);
+  summaryRef.current = summaryDepartments;
+
+  const monthsAvailableKey = Array.isArray(monthsAvailable)
+    ? monthsAvailable.join(",")
+    : "";
 
   useEffect(() => {
     let cancelled = false;
@@ -208,23 +245,31 @@ export default function AdminHistoryPanel({
 
       const monthKeys = resolveMonthKeys(monthCount, monthsAvailable);
 
-      const applyHistory = (payload) => {
+      const applyHistory = (payload, errMsg = "") => {
         if (cancelled) return;
         setHistory({
           months: payload.months?.length ? payload.months : monthKeys,
-          departments: payload.departments
+          departments: payload.departments || []
         });
+        setError(errMsg);
         setLoading(false);
       };
 
       try {
-        const res = await fetch(`${API_BASE}/history?months=${monthCount}`);
+        const res = await fetchWithAuth(`${DASHBOARD_API}/history?months=${monthCount}`);
         if (!res.ok) {
           const text = await res.text();
+          let message = text;
+          try {
+            const parsed = JSON.parse(text);
+            message = parsed.error || text;
+          } catch {
+            /* keep raw text */
+          }
           throw new Error(
             text.includes("<!DOCTYPE")
-              ? `History API not found (${res.status}). Restart the backend: node server.js`
-              : text || `History API error (${res.status})`
+              ? `History API not found (${res.status}). Restart backend: node server.js`
+              : message || `History API error (${res.status})`
           );
         }
         const data = await res.json();
@@ -242,34 +287,32 @@ export default function AdminHistoryPanel({
         }
       } catch (err) {
         console.error("History API error:", err);
-        if (!cancelled) {
-          setError(err.message || "Failed to load history");
-        }
       }
 
       try {
         const fromSummaries = await buildHistoryFromMonthlySummaries(monthKeys);
         if (fromSummaries.departments.length > 0) {
-          applyHistory(fromSummaries);
+          applyHistory(fromSummaries, "History API unavailable — built from monthly summaries.");
           return;
         }
       } catch (err) {
         console.error("Monthly summary fallback error:", err);
       }
 
-      if (!cancelled) {
-        applyHistory({
-          months: monthKeys,
-          departments: buildFallbackFromSummary(summaryDepartments, monthKeys)
-        });
-      }
+      const fallback = buildFallbackFromSummary(summaryRef.current, monthKeys);
+      applyHistory(
+        { months: monthKeys, departments: fallback },
+        fallback.length
+          ? "History API unavailable — showing cached trend data."
+          : "Could not load history. Check SQL Server and restart backend."
+      );
     }
 
     load();
     return () => {
       cancelled = true;
     };
-  }, [monthCount, monthsAvailable, summaryDepartments]);
+  }, [monthCount, monthsAvailableKey, monthsAvailable]);
 
   const departmentList = useMemo(() => history.departments, [history.departments]);
 
@@ -278,15 +321,27 @@ export default function AdminHistoryPanel({
     [departmentList, selectedDeptId]
   );
 
-  const overviewChartData = useMemo(
+  const chartMonths = useMemo(() => {
+    const keys =
+      history.months.length > 0
+        ? history.months.slice(-monthCount)
+        : resolveMonthKeys(monthCount, monthsAvailable);
+    return keys;
+  }, [history.months, monthCount, monthsAvailable]);
+
+  const deptColors = useMemo(() => deptColorMap(departmentList), [departmentList]);
+
+  const multiMonthChartData = useMemo(
     () =>
-      departmentList.map((d) => ({
-        id: d.id,
-        name: d.shortName || d.name,
-        score: d.latestScore,
-        overallTrend: d.overallTrend
-      })),
-    [departmentList]
+      chartMonths.map((monthKey) => {
+        const row = { monthKey, label: toMonthLabel(monthKey) };
+        departmentList.forEach((d) => {
+          const pt = (d.series || []).find((s) => s.month === monthKey);
+          row[d.id] = pt != null ? Number(pt.score) : null;
+        });
+        return row;
+      }),
+    [chartMonths, departmentList]
   );
 
   const detailChartData = useMemo(() => {
@@ -336,18 +391,24 @@ export default function AdminHistoryPanel({
       </div>
 
       {error && (
-        <div className="history-error">
-          {error}. Loaded monthly scores from dashboard summaries instead.
+        <div className="history-error" role="status">
+          {error}
         </div>
       )}
 
-      <div className="table-wrap history-dept-table-wrap">
-        <div className="section-title">SELECT DEPARTMENT (click a row to drill down)</div>
+      <div className="panel history-dept-table-wrap">
+        <div className="panel-header">
+          <h2 className="panel-title">Select department</h2>
+          <p className="panel-hint">
+            Latest score uses the most recent month with submitted data (not the empty current month).
+          </p>
+        </div>
         {loading && departmentList.length === 0 ? (
-          <div className="history-loading">Loading departments...</div>
+          <div className="history-loading">Loading departments…</div>
         ) : departmentList.length === 0 ? (
-          <div className="history-empty">No departments found. Run database seed and restart backend.</div>
+          <div className="history-empty">No departments found.</div>
         ) : (
+          <div className="table-scroll">
           <table className="tpi-table history-dept-table">
             <thead>
               <tr>
@@ -369,7 +430,17 @@ export default function AdminHistoryPanel({
                   <td>{idx + 1}</td>
                   <td className="kra history-dept-cell-name">{d.name}</td>
                   <td>{d.kra}</td>
-                  <td><b>{Number(d.latestScore || 0).toFixed(1)}</b></td>
+                  <td>
+                    <b>
+                      {d.latestScore != null ? Number(d.latestScore).toFixed(1) : "—"}
+                    </b>
+                    {d.latestScoreMonth && (
+                      <span className="history-latest-month">
+                        {" "}
+                        ({toMonthLabel(d.latestScoreMonth)})
+                      </span>
+                    )}
+                  </td>
                   <td className={`trend-${d.overallTrend}`}>{trendArrow(d.overallTrend)}</td>
                   <td>
                     <button
@@ -387,6 +458,7 @@ export default function AdminHistoryPanel({
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
@@ -394,59 +466,63 @@ export default function AdminHistoryPanel({
         <div className="history-charts-section">
           {!selectedDept ? (
             <>
-              <div className="section-title">
-                ALL DEPARTMENTS — LATEST SCORE ({monthCount} month window)
+              <div className="panel-header">
+                <h2 className="panel-title">
+                  All departments — last {monthCount} months
+                </h2>
+                <p className="panel-hint history-hint">
+                  Each department has its own colour. Click legend or table row to drill down.
+                </p>
               </div>
-              <p className="history-hint">
-                Bar colours: green = improving, red = declining, amber = stable over the
-                selected period.
-              </p>
-              <div className="history-chart-wrap">
-                <ResponsiveContainer width="100%" height={360}>
+              <div className="history-chart-wrap history-chart-wrap--multi history-chart-wrap--section">
+                <ResponsiveContainer width="100%" height={420}>
                   <BarChart
-                    data={overviewChartData}
-                    margin={{ top: 16, right: 24, left: 8, bottom: 80 }}
+                    data={multiMonthChartData}
+                    margin={{ top: 28, right: 16, left: 4, bottom: 8 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#c5cdd8" />
-                    <XAxis
-                      dataKey="name"
-                      angle={-35}
-                      textAnchor="end"
-                      interval={0}
-                      height={90}
-                      tick={{ fontSize: 11 }}
-                    />
+                    <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
                     <Tooltip
-                      formatter={(value) => [`${Number(value).toFixed(1)}`, "KRA Score"]}
+                      content={
+                        <HistoryChartTooltip variant="multi" departments={departmentList} />
+                      }
+                      cursor={HISTORY_TOOLTIP_CURSOR}
+                      offset={16}
+                      isAnimationActive={false}
+                      wrapperStyle={{ opacity: 1, zIndex: 50 }}
                     />
-                    <Bar dataKey="score" name="Latest KRA Score" radius={[4, 4, 0, 0]}>
-                      {overviewChartData.map((entry) => (
-                        <Cell
-                          key={entry.id}
-                          fill={TREND_COLOR[entry.overallTrend] || TREND_COLOR.FLAT}
-                          cursor="pointer"
-                          onClick={() => setSelectedDeptId(entry.id)}
-                        />
-                      ))}
-                    </Bar>
+                    <Legend onClick={(e) => setSelectedDeptId(e.dataKey)} />
+                    {departmentList.map((d) => (
+                      <Bar
+                        key={d.id}
+                        dataKey={d.id}
+                        name={d.shortName || d.name}
+                        fill={deptColors[d.id]}
+                        radius={[3, 3, 0, 0]}
+                        cursor="pointer"
+                        onClick={() => setSelectedDeptId(d.id)}
+                      />
+                    ))}
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </>
           ) : (
             <>
-              <div className="section-title">
-                {selectedDept.name} — MONTHLY PROGRESS ({detailChartData.length} months)
+              <div className="panel-header">
+                <h2 className="panel-title">
+                  {selectedDept.name} — monthly progress
+                </h2>
+                <p className="panel-hint history-hint">
+                  {selectedDept.kra} · Overall:{" "}
+                  <strong className={`trend-${selectedDept.overallTrend}`}>
+                    {trendArrow(selectedDept.overallTrend)}
+                  </strong>
+                </p>
               </div>
-              <p className="history-hint">
-                {selectedDept.kra} · Overall:{" "}
-                <strong className={`trend-${selectedDept.overallTrend}`}>
-                  {trendArrow(selectedDept.overallTrend)}
-                </strong>
-              </p>
 
-              <div className="history-progress-list">
+              <div className="history-progress-list history-progress-list--inset">
                 {detailChartData.length === 0 ? (
                   <p className="history-hint">No monthly data for this period.</p>
                 ) : (
@@ -454,15 +530,20 @@ export default function AdminHistoryPanel({
                     <div key={point.month} className="history-progress-row">
                       <span className="history-progress-label">{point.label}</span>
                       <div className="history-progress-track">
-                        <div
-                          className="history-progress-fill"
-                          style={{
-                            width: `${Math.min(100, Math.max(0, point.score))}%`,
-                            backgroundColor: TREND_COLOR[point.trend] || TREND_COLOR.FLAT
-                          }}
-                        />
+                        {point.score != null ? (
+                          <div
+                            className="history-progress-fill"
+                            ref={(el) =>
+                              bindProgressFill(el, point.score, deptColors[selectedDept.id])
+                            }
+                          />
+                        ) : (
+                          <span className="history-progress-empty">No data</span>
+                        )}
                       </div>
-                      <span className="history-progress-score">{point.score.toFixed(1)}</span>
+                      <span className="history-progress-score">
+                        {point.score != null ? point.score.toFixed(1) : "—"}
+                      </span>
                       <span className={`history-progress-trend trend-${point.trend}`}>
                         {point.trend === "UP" ? "↑" : point.trend === "DOWN" ? "↓" : "→"}
                       </span>
@@ -472,26 +553,25 @@ export default function AdminHistoryPanel({
               </div>
 
               {detailChartData.length > 0 && (
-                <div className="history-chart-wrap history-chart-detail">
+                <div className="history-chart-wrap history-chart-detail history-chart-wrap--detail-section">
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={detailChartData} margin={{ top: 16, right: 24, left: 8, bottom: 8 }}>
+                    <BarChart data={detailChartData} margin={{ top: 28, right: 24, left: 8, bottom: 8 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#c5cdd8" />
                       <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                       <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
                       <Tooltip
-                        formatter={(value, _name, props) => [
-                          `${Number(value).toFixed(1)} (${props?.payload?.trend || "FLAT"})`,
-                          "KRA Score"
-                        ]}
+                        content={<HistoryChartTooltip variant="detail" />}
+                        cursor={HISTORY_TOOLTIP_CURSOR}
+                        offset={16}
+                        isAnimationActive={false}
+                        wrapperStyle={{ opacity: 1, zIndex: 50 }}
                       />
-                      <Bar dataKey="score" name="KRA Score" radius={[4, 4, 0, 0]}>
-                        {detailChartData.map((entry) => (
-                          <Cell
-                            key={entry.month}
-                            fill={TREND_COLOR[entry.trend] || TREND_COLOR.FLAT}
-                          />
-                        ))}
-                      </Bar>
+                      <Bar
+                        dataKey="score"
+                        name="KRA Score"
+                        fill={deptColors[selectedDept.id] || "#1e3a5f"}
+                        radius={[4, 4, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

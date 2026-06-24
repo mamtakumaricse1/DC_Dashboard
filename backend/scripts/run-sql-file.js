@@ -25,10 +25,35 @@ const batches = raw
     await pool.request().batch(batch);
   }
   console.log('Done. Seeding 100 KPIs...');
+  const backendDir = path.join(__dirname, '..');
   require('child_process').execSync('node scripts/seed-100-kpis.js', {
-    cwd: path.join(__dirname, '..'),
+    cwd: backendDir,
     stdio: 'inherit'
   });
+  console.log('Hashing user passwords...');
+  require('child_process').execSync('node scripts/hash-users.js', {
+    cwd: backendDir,
+    stdio: 'inherit'
+  });
+  console.log('Running migration v3...');
+  require('child_process').execSync('node scripts/migrate-v3.js', {
+    cwd: backendDir,
+    stdio: 'inherit'
+  });
+  console.log('Running migration v4...');
+  require('child_process').execSync('node scripts/migrate-v4.js', {
+    cwd: backendDir,
+    stdio: 'inherit'
+  });
+  console.log('Seeding demo reporting cycle (optional sample targets)...');
+  try {
+    require('child_process').execSync('node scripts/seed-demo-cycle.js', {
+      cwd: backendDir,
+      stdio: 'inherit'
+    });
+  } catch (e) {
+    console.warn('Demo seed skipped or failed — run npm run seed:demo manually if needed.');
+  }
   process.exit(0);
 })().catch((err) => {
   console.error(err);

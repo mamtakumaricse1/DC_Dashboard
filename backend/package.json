@@ -4,19 +4,34 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "seed": "node scripts/seed-100-kpis.js",
-    "db:reset": "node scripts/run-sql-file.js ../SQLQuery1.sql"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node --test tests/",
+    "seed": "node scripts/seed-124-kpis.js",
+    "seed:100": "node scripts/seed-100-kpis.js",
+    "generate:kpi-assets": "node scripts/generate-kpi-assets.js",
+    "db:reset": "node scripts/run-sql-file.js ../SQLQuery1.sql",
+    "db:migrate": "node scripts/migrate-v2.js && node scripts/migrate-v3.js && node scripts/migrate-v4.js && node scripts/migrate-v5.js && node scripts/migrate-v6.js && node scripts/migrate-v7.js && node scripts/migrate-v8.js && node scripts/migrate-v9.js",
+    "seed:demo": "node scripts/seed-demo-cycle.js",
+    "seed:health-flow": "node scripts/seed-health-delivery-flow.js",
+    "remove:month": "node scripts/remove-month.js",
+    "rename:users": "node scripts/rename-dept-users.js",
+    "fix:submission-late": "node scripts/fix-submission-late.js",
+    "test:dashboard": "node scripts/test-dashboard-api.js",
+    "hash-passwords": "node scripts/hash-users.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "helmet": "^8.2.0",
+    "jsonwebtoken": "^9.0.3",
     "msnodesqlv8": "^5.1.9",
-    "mssql": "^12.5.0",
-    "nodeman": "^1.1.2"
+    "mssql": "^12.5.0"
   }
 }

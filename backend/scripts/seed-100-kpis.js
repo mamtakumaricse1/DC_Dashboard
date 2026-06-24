@@ -3,6 +3,7 @@
  * Run after SQLQuery1.sql schema: node scripts/seed-100-kpis.js
  */
 const { getPool, sql } = require('../db');
+const { resolveKpiMeta } = require('../constants/kpiMeta');
 
 const DEPT_CAPS = {
   D01: 10,
@@ -40,7 +41,7 @@ const KPI_MASTER = {
     'Teacher Attendance Rate (avg across govt schools)',
     'Student Attendance Rate (Classes 1-8)',
     'FLN Reading Proficiency, Class 3 (NIPUN Bharat)',
-    'FLN Numeracy Proficiency, Class 3 (NIPUN Bharat)',
+    'Student Retention Rate',
     'Schools with Functional Toilets (separate boy/girl)',
     'Schools with Drinking Water',
     'Class 10 Board Pass Rate (annual; reported in March-April)',
@@ -257,7 +258,17 @@ function buildKpiList() {
   kpiTable.columns.add('polarity', sql.VarChar(10), { nullable: false });
 
   kpis.forEach((k) => {
-    kpiTable.rows.add(k.kpi_id, k.dept_id, k.name, 'pct', 0, 100, 1, 'HIGHER');
+    const meta = resolveKpiMeta(k.name);
+    kpiTable.rows.add(
+      k.kpi_id,
+      k.dept_id,
+      k.name,
+      meta.unit,
+      meta.minValue,
+      meta.maxValue,
+      1,
+      meta.polarity
+    );
   });
 
   await pool.request().bulk(kpiTable);

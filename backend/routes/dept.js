@@ -1,75 +1,80 @@
+/**
+ * Department portal routes — KPI load, guide, and monthly submission.
+ * Departments may only submit the active reporting month (previous calendar month).
+ */
 const express = require('express');
 const router = express.Router();
 
-const { getPool, sql } = require('../db');
+const { getPool } = require('../db');
+const { requireDeptAccess } = require('../middleware/auth');
+const { loadDistrictConfig, toPublicDistrictConfig } = require('../utils/districtConfig');
+const { buildReportingCycleInfo, mergeCycleConfig } = require('../utils/reportingCycle');
+const { buildDeptKpiGuidePayload } = require('../services/kpiGuideService');
+const { loadDeptKpisForSubmission } = require('../services/deptKpiLoadService');
+const { submitDeptMonthlyData } = require('../services/deptSubmissionService');
 
-// GET KPIs for department (optional ?month=&year=)
-router.get('/kpis/:id', async (req, res) => {
+/** Public district + reporting cycle (no auth). */
+router.get('/context', async (req, res) => {
   try {
     const db = await getPool();
-    const now = new Date();
-    const month = Number(req.query.month) || now.getMonth() + 1;
-    const year = Number(req.query.year) || now.getFullYear();
-
-    const result = await db.request()
-      .input('id', sql.VarChar, req.params.id)
-      .input('month', sql.Int, month)
-      .input('year', sql.Int, year)
-      .query(`
-        SELECT k.kpi_id, k.name, k.unit, pd.actual_value
-        FROM KPIs k
-        LEFT JOIN PerformanceData pd 
-          ON k.kpi_id = pd.kpi_id 
-          AND pd.entry_month = @month
-          AND pd.entry_year = @year
-        WHERE k.dept_id = @id
-        ORDER BY k.name
-      `);
-
-    res.json(result.recordset);
-
+    const districtRow = await loadDistrictConfig(db);
+    res.json({
+      district: toPublicDistrictConfig(districtRow),
+      reportingCycle: buildReportingCycleInfo(mergeCycleConfig(districtRow), new Date())
+    });
   } catch (err) {
-    res.status(500).send(err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// SUBMIT DATA for selected reporting month
-router.post('/submit', async (req, res) => {
+/** Live KPI guide for one department (from DB). */
+router.get('/kpi-guide/:id', requireDeptAccess, async (req, res) => {
   try {
     const db = await getPool();
-    const now = new Date();
-    const month = Number(req.body.month) || now.getMonth() + 1;
-    const year = Number(req.body.year) || now.getFullYear();
-    const entries = Array.isArray(req.body.entries) ? req.body.entries : [];
-
-    for (const e of entries) {
-      await db.request()
-        .input('kid', sql.VarChar, e.kpi_id)
-        .input('val', sql.Float, e.actual_value)
-        .input('month', sql.Int, month)
-        .input('year', sql.Int, year)
-        .query(`
-          IF EXISTS (
-            SELECT 1 FROM PerformanceData 
-            WHERE kpi_id = @kid 
-              AND entry_month = @month 
-              AND entry_year = @year
-          )
-            UPDATE PerformanceData 
-            SET actual_value = @val 
-            WHERE kpi_id = @kid 
-              AND entry_month = @month 
-              AND entry_year = @year
-          ELSE
-            INSERT INTO PerformanceData (kpi_id, actual_value, entry_month, entry_year)
-            VALUES (@kid, @val, @month, @year)
-        `);
-    }
-
-    res.send("Saved Successfully");
-
+    const payload = await buildDeptKpiGuidePayload(db, req.params.id);
+    res.json(payload);
   } catch (err) {
-    res.status(500).send(err.message);
+    const status = err.status || 500;
+    if (status >= 500) console.error('KPI guide error:', err);
+    res.status(status).json({ error: err.message });
+  }
+});
+
+/** KPI list + saved values for active reporting month. */
+router.get('/kpis/:id', requireDeptAccess, async (req, res) => {
+  try {
+    const db = await getPool();
+    const payload = await loadDeptKpisForSubmission(db, req.params.id);
+    res.json(payload);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** Save or update monthly PerformanceData for the department. */
+router.post('/submit', async (req, res) => {
+  const role = String(req.user?.role || '').toUpperCase();
+  if (role !== 'DEPT' || !req.user.dept_id) {
+    return res.status(403).json({ error: 'Department user required for data submission' });
+  }
+
+  try {
+    const pool = await getPool();
+    const districtRow = await loadDistrictConfig(pool);
+    const result = await submitDeptMonthlyData({
+      pool,
+      deptId: req.user.dept_id,
+      userId: req.user.user_id,
+      year: Number(req.body.year),
+      month: Number(req.body.month),
+      entries: Array.isArray(req.body.entries) ? req.body.entries : [],
+      districtRow
+    });
+    res.json(result);
+  } catch (err) {
+    const status = err.status || 500;
+    if (status >= 500) console.error('Dept submit error:', err);
+    res.status(status).json({ error: err.message });
   }
 });
 

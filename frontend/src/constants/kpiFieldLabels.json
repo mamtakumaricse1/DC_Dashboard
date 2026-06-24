@@ -1,0 +1,494 @@
+{
+  "D01_PHC_FUNCTIONALITY_SCORE_PCT_OF_PHCS_SCORING_70PCT_ON_6_PARAMETER_AUDIT": [
+    "Total PHCs",
+    "Scoring ≥70%"
+  ],
+  "D01_INSTITUTIONAL_DELIVERY_RATE": [
+    "Total Deliveries",
+    "Institutional Deliveries"
+  ],
+  "D01_FULL_IMMUNISATION_COVERAGE_CHILDREN_0_1_YR": [
+    "Registered Children (0–1 yr)",
+    "Fully Immunized"
+  ],
+  "D01_ESANJEEVANI_TELE_OPD_CONSULTS_PER_ACTIVE_SC": [
+    "Active Sub-Centres",
+    "Tele-OPD Consults"
+  ],
+  "D01_ANC_4_VISITS_COMPLETED_PCT_OF_REGISTERED_PREGNANCIES": [
+    "Registered Pregnancies",
+    "With 4 ANC Visits"
+  ],
+  "D01_AYUSHMAN_CARD_COVERAGE_IN_PRIORITY_VILLAGES": [
+    "Total Households (Priority Villages)",
+    "Households with Ayushman Card"
+  ],
+  "D01_DRUG_STOCK_OUT_DAYS_AT_PHCS_CUMULATIVE_ACROSS_DISTRICT": [
+    "Total PHCs",
+    "Stock-out Days (This Month)"
+  ],
+  "D01_OST_OPIOID_SUBSTITUTION_ACTIVE_PATIENTS": [
+    "Sanctioned OST Capacity",
+    "Active OST Patients"
+  ],
+  "D01_DE_ADDICTION_CENTRE_TREATMENT_RETENTION_3_MONTH": [
+    "Enrolled 3 Months Ago",
+    "Retained at 3 Months"
+  ],
+  "D01_TB_CASE_NOTIFICATION_RATE_PER_LAKH_POPULATION": [
+    "District Population",
+    "TB Cases Notified"
+  ],
+  "D01_MATERNAL_DEATHS_THIS_MONTH_DISTRICT_TOTAL": [
+    "Registered Mothers",
+    "Maternal Deaths"
+  ],
+  "D01_INFANT_DEATHS_THIS_MONTH_DISTRICT_TOTAL": [
+    "Registered Infants",
+    "Infant Deaths"
+  ],
+  "D02_TEACHER_ATTENDANCE_RATE_GOVT_SCHOOLS": [
+    "Total Teachers",
+    "Teachers Present"
+  ],
+  "D02_STUDENT_ATTENDANCE_RATE_CLASSES_1_8": [
+    "Total Students",
+    "Students Present"
+  ],
+  "D02_FLN_READING_PROFICIENCY_CLASS_3_NIPUN_BHARAT": [
+    "Students Assessed",
+    "Students Achieving Proficiency"
+  ],
+  "D02_STUDENT_RETENTION_RATE": [
+    "Students at Start of Academic Year",
+    "Students Continuing in School"
+  ],
+  "D02_SCHOOLS_WITH_FUNCTIONAL_TOILETS_SEPARATE_BOYS_GIRLS": [
+    "Total Schools",
+    "Schools with Functional Toilets"
+  ],
+  "D02_SCHOOLS_WITH_DRINKING_WATER_FACILITY": [
+    "Total Schools",
+    "Schools with Drinking Water Facility"
+  ],
+  "D02_CLASS_10_BOARD_PASS_RATE": [
+    "Students Appeared",
+    "Students Passed"
+  ],
+  "D02_CLASS_12_BOARD_PASS_RATE": [
+    "Students Appeared",
+    "Students Passed"
+  ],
+  "D02_OUT_OF_SCHOOL_CHILDREN_IDENTIFIED_AND_MAINSTREAMED": [
+    "Children Identified (Out-of-School)",
+    "Children Mainstreamed"
+  ],
+  "D02_TEACHER_TRAINING_COMPLETION": [
+    "Annual Training Target (Days)",
+    "Training Days Completed"
+  ],
+  "D02_SCHOOLS_RECEIVING_MID_DAY_MEAL_ON_ALL_WORKING_DAYS": [
+    "Total Schools",
+    "Schools Receiving Mid-Day Meal Daily"
+  ],
+  "D02_EMRS___ASHRAM_SCHOOL_HOSTEL_OCCUPANCY": [
+    "Total Hostel Capacity",
+    "Occupied Seats"
+  ],
+  "D03_AWC_FUNCTIONALITY_SCORE_PCT_SCORING_70PCT_ON_5_PARAMETER_AUDIT": [
+    "Total AWCs",
+    "Functional AWCs (≥70% Score)"
+  ],
+  "D03_CHILDREN_0_6_REGISTERED_IN_ICDS_MIS": [
+    "Target Children (0–6 Years)",
+    "Registered in ICDS MIS"
+  ],
+  "D03_AWCS_RUNNING_DAILY_PRE_SCHOOL_ACTIVITY": [
+    "Total AWCs",
+    "AWCs with Daily Pre-school Activity"
+  ],
+  "D03_SAKSHAM_AWC_UPGRADE_STATUS_CUMULATIVE_COUNT": [
+    "Annual Target AWCs",
+    "Upgraded Saksham AWCs (FY Cumulative)"
+  ],
+  "D03_TAKE_HOME_RATION_DISTRIBUTION_COVERAGE": [
+    "Eligible Beneficiaries",
+    "Beneficiaries Covered"
+  ],
+  "D03_HOT_COOKED_MEAL_DAYS_PER_AWC_PER_MONTH": [
+    "Total AWCs",
+    "AWCs Providing Hot Cooked Meals"
+  ],
+  "D03_SEVERELY_UNDERWEIGHT_CHILDREN_PCT_OF_REGISTERED_0_6": [
+    "Registered Children (0–6 Years)",
+    "Severely Underweight Children"
+  ],
+  "D03_STUNTING_RATE_CLASS_1_ENTRANTS_ANNUAL": [
+    "Children Assessed (Class 1 Entrants)",
+    "Stunted Children"
+  ],
+  "D03_AWWS_WITH_SMARTPHONE_AND_POSHAN_APP_ACTIVE": [
+    "Total AWWs",
+    "AWWs Active on POSHAN App"
+  ],
+  "D04_NEW_PATIENTS_INDUCTED_INTO_DE_ADDICTION_PROGRAMME": [
+    "Sanctioned Treatment Capacity",
+    "New Patients Inducted"
+  ],
+  "D04_RECOVERED_USERS_PLACED_IN_SKILLING_EMPLOYMENT": [
+    "Recovered Users Eligible",
+    "Placed in Skilling/Employment"
+  ],
+  "D04_PEER_COUNSELLORS_ACTIVE_RECOVERED_USERS": [
+    "Sanctioned Peer Counsellor Posts",
+    "Active Peer Counsellors"
+  ],
+  "D04_SCHOOL_BASED_DRUG_AWARENESS_SESSIONS_CONDUCTED": [
+    "Schools Targeted",
+    "Drug Awareness Sessions Conducted"
+  ],
+  "D04_SPORTS_TOURNAMENTS_AT_CIRCLE_LEVEL_HELD": [
+    "Circles in District",
+    "Sports Tournaments Held"
+  ],
+  "D04_FOOTBALL_LEAGUE_REGISTERED_TEAMS": [
+    "Target Teams (League)",
+    "Registered Teams"
+  ],
+  "D04_YOUTH_SKILLING_ENROLMENTS_CURRENT_MONTH": [
+    "Monthly Skilling Target",
+    "Youth Enrolments This Month"
+  ],
+  "D04_NDPS_CASES_REGISTERED_PLUS_DISPOSAL_STATUS": [
+    "NDPS Cases Registered",
+    "NDPS Cases Disposed"
+  ],
+  "D05_ODF_PLUS_VILLAGES_DECLARED_AND_SUSTAINED_CUMULATIVE": [
+    "Annual ODF-Plus Target (Villages)",
+    "Villages Declared ODF-Plus (FY Cumulative)"
+  ],
+  "D05_KHONSA_TOWN_DOOR_TO_DOOR_WASTE_COLLECTION_COVERAGE": [
+    "Total Households (Khonsa Town)",
+    "Households with Door-to-Door Collection"
+  ],
+  "D05_PUBLIC_TOILETS_FUNCTIONAL_PCT_OF_CONSTRUCTED": [
+    "Total Public Toilets Constructed",
+    "Functional Public Toilets"
+  ],
+  "D05_SWACHH_TIRAP_AWARDS_PARTICIPATING_VILLAGES": [
+    "Target Participating Villages",
+    "Villages Participating in Swachh Tirap"
+  ],
+  "D05_WASTE_SEGREGATION_AT_SOURCE_PCT_HHS_IN_TOWN": [
+    "Total Households (Town)",
+    "Households Segregating Waste"
+  ],
+  "D05_DRAINS_CLEANED_PRE_MONSOON_PCT_OF_URBAN_DRAINS": [
+    "Total Urban Drains",
+    "Drains Cleaned Pre-Monsoon"
+  ],
+  "D06_PWD_ROAD_CONDITION_PCT_RATED_PASSABLE_DRY_SEASON": [
+    "Total Road Length Assessed (km)",
+    "Road Length Passable (Dry Season)"
+  ],
+  "D06_PWD_ROAD_CONDITION_PCT_PASSABLE_MONSOON": [
+    "Total Road Length Assessed (km)",
+    "Road Length Passable (Monsoon)"
+  ],
+  "D06_PMGSY_PROJECTS_ON_SCHEDULE_PCT": [
+    "Total PMGSY Projects",
+    "Projects On Schedule"
+  ],
+  "D06_JJM_TAP_CONNECTIONS_FUNCTIONAL": [
+    "Total JJM Tap Connections",
+    "Functional Tap Connections"
+  ],
+  "D06_VILLAGES_WITH_24X7_POWER": [
+    "Total Villages",
+    "Villages with 24×7 Power"
+  ],
+  "D06_MOBILE_NETWORK_COVERAGE_VILLAGES_WITH_4G": [
+    "Total Villages",
+    "Villages with 4G Coverage"
+  ],
+  "D06_BRIDGES_CULVERTS_DAMAGED_AND_AWAITING_REPAIR": [
+    "Total Bridges and Culverts",
+    "Damaged and Awaiting Repair"
+  ],
+  "D06_POWER_OUTAGE_HOURS_DISTRICT_TOTAL_MONTHLY": [
+    "Total Possible Supply Hours",
+    "Outage Hours This Month"
+  ],
+  "D07_AVERAGE_DAILY_POWER_SUPPLY_HOURS_DISTRICT_HQ_PLUS_CIRCLE_HQS": [
+    "Location-Days (HQs × Days in Month)",
+    "Total Supply Hours"
+  ],
+  "D07_TOTAL_UNSCHEDULED_OUTAGE_HOURS_DISTRICT_AGGREGATE_MONTHLY": [
+    "Total Possible Supply Hours",
+    "Unscheduled Outage Hours"
+  ],
+  "D07_VILLAGES_WITH_FUNCTIONAL_11KV_LT_CONNECTIVITY": [
+    "Total Villages",
+    "Villages with Functional 11kV/LT Connectivity"
+  ],
+  "D07_HOUSEHOLDS_WITH_METERED_CONNECTION_RDSS___DDUGJY": [
+    "Total Households",
+    "Households with Metered Connection"
+  ],
+  "D07_NEW_SERVICE_CONNECTION_—_MEAN_DAYS_APPLICATION_TO_ENERGISATION": [
+    "Connections Energised This Month",
+    "Total Days (Application to Energisation)"
+  ],
+  "D07_BILLING_EFFICIENCY_UNITS_BILLED___UNITS_INPUT": [
+    "Units Input (Energy Supplied)",
+    "Units Billed"
+  ],
+  "D07_COLLECTION_EFFICIENCY_REVENUE_COLLECTED___BILLED": [
+    "Revenue Billed (₹)",
+    "Revenue Collected (₹)"
+  ],
+  "D07_DISTRIBUTION_TRANSFORMER_FAILURE_RATE_PCT_OF_INSTALLED_BASE": [
+    "Total Distribution Transformers",
+    "Transformers Failed This Month"
+  ],
+  "D07_SOLAR_ROOFTOP___PM_SURYA_GHAR_INSTALLATIONS_COMPLETED_CUMULATIVE": [
+    "Annual Installation Target",
+    "Installations Completed (FY Cumulative)"
+  ],
+  "D07_CRITICAL_SUBSTATION_MAINTENANCE_COMPLIANCE_PCT_SCHEDULE_MET": [
+    "Scheduled Maintenance Tasks",
+    "Tasks Completed On Schedule"
+  ],
+  "D08_FIR_REGISTRATION_COMPLIANCE_PCT_OF_COMPLAINTS_LEADING_TO_FIR": [
+    "Total Complaints Received",
+    "Complaints Converted to FIR"
+  ],
+  "D08_CASE_DISPOSAL_RATE_PCT_OF_PENDING_DOCKET_DISPOSED": [
+    "Pending Cases (Start of Month)",
+    "Cases Disposed This Month"
+  ],
+  "D08_NDPS_SEIZURE_TO_TREATMENT_REFERRAL_RATIO_LOWER__BETTER_BALANCE": [
+    "NDPS Seizures",
+    "Treatment Referrals from Seizures"
+  ],
+  "D08_CRIMES_AGAINST_WOMEN_FIRS_REGISTERED": [
+    "District Population (lakhs)",
+    "CAW FIRs Registered"
+  ],
+  "D08_CAW_CONVICTION_RATE_PCT_OF_CASES_REACHING_JUDGMENT": [
+    "CAW Cases Reaching Judgment",
+    "Cases with Conviction"
+  ],
+  "D08_POLICE_PUBLIC_GRIEVANCE_DAYS_HELD_PER_MONTH_DISTRICT_WIDE": [
+    "Target Grievance Days (District)",
+    "Grievance Days Held"
+  ],
+  "D08_EXCISE___OPIUM_FIELD_DESTRUCTION_ACRES": [
+    "Target Acres for Destruction",
+    "Acres Destroyed"
+  ],
+  "D08_COMMUNAL_TRIBAL_TENSION_INCIDENTS": [
+    "Villages/Areas Monitored",
+    "Communal/Tribal Tension Incidents"
+  ],
+  "D09_FARMER_FIELD_DEMONSTRATION_PLOTS_ACTIVE": [
+    "Target Demonstration Plots",
+    "Active Demonstration Plots"
+  ],
+  "D09_FPOS_ACTIVE_WITH_100_MEMBERS": [
+    "Target FPOs",
+    "FPOs Active with >100 Members"
+  ],
+  "D09_KCC_KISAN_CREDIT_CARD_COVERAGE_OF_FARMERS": [
+    "Total Farmer Households",
+    "Farmers with KCC"
+  ],
+  "D09_PM_KISAN_BENEFICIARIES_RECEIVING_INSTALMENT": [
+    "Total PM-Kisan Beneficiaries",
+    "Beneficiaries Who Received Instalment"
+  ],
+  "D09_SOIL_HEALTH_CARDS_DISTRIBUTED_CUMULATIVE": [
+    "Annual Soil Health Card Target",
+    "Cards Distributed (FY Cumulative)"
+  ],
+  "D09_AGARWOOD_SAPLINGS_DISTRIBUTED_CUMULATIVE": [
+    "Annual Sapling Target",
+    "Agarwood Saplings Distributed (FY Cumulative)"
+  ],
+  "D09_LARGE_CARDAMOM_ACREAGE_BROUGHT_UNDER_CULTIVATION": [
+    "Target Cardamom Acres",
+    "Acres Brought Under Cultivation"
+  ],
+  "D09_MITHUN_VACCINATION_COVERAGE": [
+    "Total Mithun Population",
+    "Mithun Vaccinated"
+  ],
+  "D09_SHGS_WITH_ACTIVE_BANK_CREDIT_LINE": [
+    "Total SHGs",
+    "SHGs with Active Bank Credit Line"
+  ],
+  "D09_DDU_GKY_SKILLING_PLACEMENTS_CUMULATIVE": [
+    "Annual Placement Target",
+    "DDU-GKY Placements (FY Cumulative)"
+  ],
+  "D10_SATURATION_VILLAGES_WHERE_CAMP_HELD_CUMULATIVE": [
+    "Annual Saturation Village Target",
+    "Villages Where Camp Held (FY Cumulative)"
+  ],
+  "D10_AADHAAR_SATURATION_IN_PRIORITY_VILLAGES": [
+    "Residents in Priority Villages",
+    "Residents with Aadhaar"
+  ],
+  "D10_JAN_DHAN_ACCOUNT_COVERAGE_ADULT_HHS": [
+    "Total Adult Households",
+    "Households with Jan Dhan Account"
+  ],
+  "D10_RATION_CARD_BACKLOG_PENDING_APPLICATIONS": [
+    "Ration Card Applications Received",
+    "Pending Backlog"
+  ],
+  "D10_PMAY_G_HOUSES_SANCTIONED_VS_COMPLETED": [
+    "PMAY-G Houses Sanctioned",
+    "PMAY-G Houses Completed"
+  ],
+  "D10_NSAP_PENSION_DISBURSEMENT_PCT_OF_BENEFICIARIES_RECEIVED": [
+    "Total NSAP Beneficiaries",
+    "Beneficiaries Who Received Pension"
+  ],
+  "D10_PM_JANMAN_PLAN_IMPLEMENTATION_PCT_OF_APPROVED_ACTIVITIES_EXECUTED": [
+    "Approved PM-JANMAN Activities",
+    "Activities Executed"
+  ],
+  "D10_DAJGUA_DISTRICT_PLAN_ACTIVITIES_ON_SCHEDULE": [
+    "Total DAJGUA Plan Activities",
+    "Activities On Schedule"
+  ],
+  "D11_LAND_MUTATION_CASES_DISPOSED_WITHIN_30_DAYS": [
+    "Mutation Cases Received",
+    "Cases Disposed Within 30 Days"
+  ],
+  "D11_LAND_RECORDS_DIGITISATION_COVERAGE": [
+    "Total Revenue Villages/Parcels",
+    "Records Digitised"
+  ],
+  "D11_PENDING_COURT_CASES_INVOLVING_DISTRICT_PCT": [
+    "Total Court Cases (District)",
+    "Pending Cases"
+  ],
+  "D11_PUBLIC_HEARING_DAYS_CO_PLUS_SDO_DARBAR_HELD": [
+    "Target Public Hearing Days",
+    "Hearing Days Held (CO + SDO Darbar)"
+  ],
+  "D11_REVENUE_COURT_CASES_DISPOSED": [
+    "Total Revenue Court Cases",
+    "Cases Disposed"
+  ],
+  "D12_ST_SCHEDULED_TRIBE_CERTIFICATE_ISSUED_WITHIN_15_DAYS": [
+    "ST Certificate Applications Received",
+    "Issued Within 15 Days"
+  ],
+  "D12_PRC_PERMANENT_RESIDENCE_CERTIFICATE_ISSUED_WITHIN_15_DAYS": [
+    "PRC Applications Received",
+    "Issued Within 15 Days"
+  ],
+  "D12_TRC_TEMPORARY_RESIDENCE_CERTIFICATE_ISSUED_WITHIN_15_DAYS": [
+    "TRC Applications Received",
+    "Issued Within 15 Days"
+  ],
+  "D12_GOVERNMENT_ID_CARD_ISSUED_WITHIN_15_DAYS": [
+    "Government ID Applications Received",
+    "Issued Within 15 Days"
+  ],
+  "D12_ILP_INNER_LINE_PERMIT_ISSUED_WITHIN_7_DAYS": [
+    "ILP Applications Received",
+    "Issued Within 7 Days"
+  ],
+  "D12_DRIVING_LICENCE_—_APPLICATIONS_FORWARDED_TO_DTO_WITHIN_3_WORKING_DAYS": [
+    "Driving Licence Applications Received",
+    "Forwarded to DTO Within 3 Days"
+  ],
+  "D12_DRIVING_LICENCE_—_APPLICATIONS_RECEIVED_VOLUME_THIS_MONTH": [
+    "Expected Monthly Volume",
+    "Driving Licence Applications Received"
+  ],
+  "D12_DRIVING_LICENCE_—_APPLICATIONS_PENDING_FORWARDING_3_DAYS": [
+    "Driving Licence Applications Received",
+    "Pending Forwarding >3 Days"
+  ],
+  "D12_VEHICLE_REGISTRATION_—_APPLICATIONS_FORWARDED_TO_DTO_WITHIN_3_WORKING_DAYS": [
+    "Vehicle Registration Applications Received",
+    "Forwarded to DTO Within 3 Days"
+  ],
+  "D12_VEHICLE_REGISTRATION_—_APPLICATIONS_RECEIVED_VOLUME_THIS_MONTH": [
+    "Expected Monthly Volume",
+    "Vehicle Registration Applications Received"
+  ],
+  "D12_VEHICLE_REGISTRATION_—_APPLICATIONS_PENDING_FORWARDING_3_DAYS": [
+    "Vehicle Registration Applications Received",
+    "Pending Forwarding >3 Days"
+  ],
+  "D12_CITIZEN_SATISFACTION_WITH_JAN_SUVIDHA_RANDOM_PHONE_SAMPLE": [
+    "Citizens Surveyed",
+    "Citizens Satisfied"
+  ],
+  "D13_DISASTER_PREPAREDNESS_DRILLS_CONDUCTED": [
+    "Drills Planned",
+    "Drills Conducted"
+  ],
+  "D13_PRE_MONSOON_STOCKING_AT_PHCS_SCHOOLS_PCT_COMPLETE_BY_APRIL": [
+    "Total PHCs and Schools",
+    "Pre-Monsoon Stocking Complete by April"
+  ],
+  "D13_VILLAGES_WITH_DOCUMENTED_DRR_PLANS": [
+    "Target Villages",
+    "Villages with Documented DRR Plans"
+  ],
+  "D13_RELIEF_REACHED_WITHIN_7_DAYS_OF_REPORTED_INCIDENT": [
+    "Reported Incidents",
+    "Incidents with Relief Within 7 Days"
+  ],
+  "D13_EARLY_WARNING_SYSTEM_COVERAGE_FLOOD_LANDSLIDE_PRONE_VILLAGES": [
+    "Flood/Landslide-Prone Villages",
+    "Villages with Early Warning Coverage"
+  ],
+  "D13_VHF_HF_RADIO_BACKUP_FUNCTIONAL_AT_CRITICAL_LOCATIONS": [
+    "Critical Locations",
+    "Locations with Functional VHF/HF Radio"
+  ],
+  "D14_DC_FIELD_DAYS_COMPLETED": [
+    "Field Days Target (DC)",
+    "Field Days Completed"
+  ],
+  "D14_SDO_FIELD_DAYS_AVG_PER_SDO": [
+    "Number of SDOs",
+    "Total SDO Field Days"
+  ],
+  "D14_OFFICER_TOUR_DIARIES_SUBMITTED_ON_TIME": [
+    "Officers Required to Submit Diaries",
+    "Tour Diaries Submitted On Time"
+  ],
+  "D14_GB_360_FEEDBACK_FORMS_RECEIVED_QUARTERLY": [
+    "Quarterly Feedback Target",
+    "GB 360 Feedback Forms Received"
+  ],
+  "D14_GRIEVANCES_REGISTERED_PGRS_DARPAN_PLUS_WHATSAPP": [
+    "Monthly Grievance Target",
+    "Grievances Registered"
+  ],
+  "D14_GRIEVANCES_DISPOSED_WITHIN_30_DAYS": [
+    "Total Grievances Open",
+    "Grievances Disposed Within 30 Days"
+  ],
+  "D14_CITIZEN_SATISFACTION_RANDOM_PHONE_SAMPLE_OF_CLOSED_CASES": [
+    "Citizens Surveyed (Closed Cases)",
+    "Citizens Satisfied"
+  ],
+  "D14_PRESS_NOTES___PUBLIC_COMMUNICATIONS_ISSUED": [
+    "Monthly Communications Target",
+    "Press Notes Issued"
+  ],
+  "D14_VACANCIES_IN_CRITICAL_POSTS_DISTRICT_TOTAL": [
+    "Sanctioned Critical Posts",
+    "Vacant Critical Posts"
+  ]
+}
