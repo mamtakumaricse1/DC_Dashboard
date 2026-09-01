@@ -47,7 +47,11 @@ export function formatMeasurementUnit(unit, unitLabel, name = "") {
   return "value";
 }
 
-export function formatMeasurementPeriodTag(freq, unit, unitLabel, name = "") {
+export function formatMeasurementPeriodTag(freq, unit, unitLabel, name = "", quarterLabel = null) {
+  if (freq === "Q" && quarterLabel) {
+    const measure = formatMeasurementUnit(unit, unitLabel, name);
+    return measure ? `${quarterLabel} (${measure})` : quarterLabel;
+  }
   const period = freq === "Q" ? "Quarterly" : "Monthly";
   const measure = formatMeasurementUnit(unit, unitLabel, name);
   return `${period} (${measure})`;

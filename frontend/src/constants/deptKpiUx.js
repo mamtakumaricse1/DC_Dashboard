@@ -5,7 +5,7 @@
 export const DEPT_ENTRY_STEPS = [
   {
     title: "Which month?",
-    body: "You file the previous calendar month only. Example: in June you enter May figures."
+    body: "You file the previous calendar month only. Example: in July you enter June figures; in August you enter July figures."
   },
   {
     title: "What to type?",

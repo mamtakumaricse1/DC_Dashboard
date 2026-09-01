@@ -10,6 +10,7 @@
  *       actual_value = (field2 ÷ field1) × ratioScale (default 100 = %).
  */const { getCatalogKpi } = require('../constants/kpiCatalog');
 const FIELD_LABELS = require('../constants/kpiFieldLabels.json');
+const { buildQuarterEntryContext } = require('./quarterPeriod');
 
 const YES_NO_PATTERN = /yes\/no/i;
 
@@ -186,10 +187,13 @@ function buildEnterHint(kpi, entrySpec) {
   return `${entrySpec.inputLabel}. Target: ${target}.`;
 }
 
-function enrichKpiWithEntrySpec(kpi) {
+function enrichKpiWithEntrySpec(kpi, context = {}) {
   const catalog = kpi.kpi_id ? getCatalogKpi(kpi.kpi_id) : null;
   const merged = { ...catalog, ...kpi };
   const entrySpec = resolveEntrySpec(merged);
+  const activeMonth = context.activeMonthKey || context.activeReportingMonth || null;
+  const fiscalStartMonth = context.fiscalStartMonth || 4;
+  const quarterCtx = buildQuarterEntryContext(merged, activeMonth, fiscalStartMonth);
   const actual = computeActualValue(entrySpec, {
     field1: kpi.denominator_value,
     field2: kpi.numerator_value,
@@ -209,7 +213,8 @@ function enrichKpiWithEntrySpec(kpi) {
     target_display: formatTarget(merged),
     enter_hint: buildEnterHint(merged, entrySpec),
     computed_value: actual ?? savedEntry.score,
-    saved_entry: savedEntry
+    saved_entry: savedEntry,
+    ...(quarterCtx || {})
   };
 }
 

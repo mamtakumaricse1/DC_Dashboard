@@ -11,32 +11,12 @@
 
 const { calcKpiScore, scoreKpiFromRow } = require('./scoringService');
 const { toMonthKey } = require('../utils/reportingMonths');
-
-function getQuarterKey(monthKey, fiscalStartMonth = 4) {
-  const [y, m] = monthKey.split('-').map(Number);
-  const fiscalYear = m >= fiscalStartMonth ? y : y - 1;
-  const monthInFy = m >= fiscalStartMonth ? m - fiscalStartMonth : m + (12 - fiscalStartMonth);
-  const q = Math.floor(monthInFy / 3) + 1;
-  return `${fiscalYear}-Q${q}`;
-}
-
-function getQuarterMonthKeys(quarterKey, fiscalStartMonth = 4) {
-  const [fy, qPart] = quarterKey.split('-Q');
-  const fiscalYear = Number(fy);
-  const q = Number(qPart);
-  if (!fiscalYear || !q || q < 1 || q > 4) return [];
-
-  const keys = [];
-  for (let i = 0; i < 3; i += 1) {
-    const monthNum = fiscalStartMonth + (q - 1) * 3 + i;
-    if (monthNum <= 12) {
-      keys.push(toMonthKey(fiscalYear, monthNum));
-    } else {
-      keys.push(toMonthKey(fiscalYear + 1, monthNum - 12));
-    }
-  }
-  return keys;
-}
+const {
+  getQuarterKey,
+  getQuarterMonthKeys,
+  formatQuarterReportingLabel,
+  formatQuarterRangeLabel
+} = require('../utils/quarterPeriod');
 
 function quarterEntryContribution(row) {
   if (row.numerator_value != null && Number.isFinite(Number(row.numerator_value))) {
@@ -120,6 +100,8 @@ function resolveKpiScoreForMonth({
 module.exports = {
   getQuarterKey,
   getQuarterMonthKeys,
+  formatQuarterReportingLabel,
+  formatQuarterRangeLabel,
   sumQuarterActualsToDate,
   calcQuarterlyProgressScore,
   resolveKpiScoreForMonth

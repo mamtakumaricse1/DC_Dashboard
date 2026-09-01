@@ -14,6 +14,7 @@ const { resolveKpiMeta } = require('../constants/kpiMeta');
 const { resolveEntrySpec } = require('../utils/kpiEntrySpec');
 const { scoreKpiFromRow, getRagStatus, resolveScoringBand, kpiWeightOf } = require('./scoringService');
 const { getQuarterKey, getQuarterMonthKeys, sumQuarterActualsToDate, calcQuarterlyProgressScore } = require('./quarterlyTargetService');
+const { formatQuarterReportingLabel, formatQuarterRangeLabel } = require('../utils/quarterPeriod');
 const { getNextMonthKey } = require('../utils/reportingCycle');
 const { toMonthKey } = require('../utils/reportingMonths');
 
@@ -45,7 +46,7 @@ function findLatestActualInQuarter(allRows, kpiId, monthKey, fiscalStartMonth = 
   return latest;
 }
 
-function buildMeasurementMeta(row) {
+function buildMeasurementMeta(row, monthKey = null, fiscalStartMonth = 4) {
   const catalog = getCatalogKpi(row.kpi_id);
   const inferred = resolveKpiMeta(row.kpi_name);
   const merged = {
@@ -62,13 +63,30 @@ function buildMeasurementMeta(row) {
   const catalogUnit = row.unit || inferred.unit;
   const catalogUnitLabel = row.unit_label || inferred.unitLabel || catalogUnit || '';
 
+  let freqLabel = freq === 'Q' ? 'Quarterly' : 'Monthly';
+  let measurementNote =
+    freq === 'Q'
+      ? 'Reported once per quarter — score uses the latest entry in that quarter.'
+      : 'Reported every month — missing month counts as zero score.';
+  let reportingQuarterLabel = null;
+  let reportingQuarterRange = null;
+
+  if (freq === 'Q' && monthKey) {
+    const quarterKey = getQuarterKey(monthKey, fiscalStartMonth);
+    reportingQuarterRange = formatQuarterRangeLabel(quarterKey, fiscalStartMonth);
+    reportingQuarterLabel = formatQuarterReportingLabel(monthKey, fiscalStartMonth);
+    freqLabel = reportingQuarterLabel;
+    measurementNote =
+      `Quarterly for ${reportingQuarterRange}. ` +
+      'Enter when filing the last month of the quarter (Jun, Sep, Dec, or Mar).';
+  }
+
   return {
     freq,
-    freqLabel: freq === 'Q' ? 'Quarterly' : 'Monthly',
-    measurementNote:
-      freq === 'Q'
-        ? 'Reported once per quarter — score uses latest entry in the fiscal quarter.'
-        : 'Reported every month — missing month counts as zero score.',
+    freqLabel,
+    reportingQuarterLabel,
+    reportingQuarterRange,
+    measurementNote,
     catalogTarget: row.target_value ?? catalog?.target ?? null,
     unit: catalogUnit,
     unitLabel: catalogUnitLabel,
@@ -132,10 +150,12 @@ function explainScore(resolved, meta) {
   }
   if (resolved.scoringMode === 'QUARTERLY_REPORT') {
     if (resolved.status === 'AWAITING_QUARTER') {
-      return 'Awaiting quarterly report — not counted in this month\'s TPI until data is filed.';
+      const range = meta.reportingQuarterRange || 'this quarter';
+      return `Awaiting quarterly data for ${range} — excluded from this month's TPI until filed at quarter-end.`;
     }
-    const reported = resolved.reportedMonth ? ` (from ${resolved.reportedMonth})` : '';
-    return `Quarterly indicator${reported}: ${formatBandScoreExplanation(resolved, meta)}`;
+    const reported = resolved.reportedMonth ? ` (filed ${resolved.reportedMonth})` : '';
+    const range = meta.reportingQuarterRange ? ` for ${meta.reportingQuarterRange}` : '';
+    return `Quarterly indicator${range}${reported}: ${formatBandScoreExplanation(resolved, meta)}`;
   }
   if (resolved.status === 'NO_DATA') {
     return 'No data submitted this month — score treated as 0.';
@@ -238,7 +258,7 @@ function resolveKpiScoreAtMonth({
   dcScoreTargets = [],
   fiscalStartMonth = 4
 }) {
-  const meta = buildMeasurementMeta(kpiDef);
+  const meta = buildMeasurementMeta(kpiDef, monthKey, fiscalStartMonth);
   const qTarget = quarterlyTargets.get(kpiDef.kpi_id);
 
   const finish = (resolved) => {
@@ -404,6 +424,8 @@ function computeDeptMonthSnapshot(deptId, allRows, monthKey, scoringContext = {}
       reportedMonth: resolved.reportedMonth || null,
       freq: resolved.meta.freq,
       freqLabel: resolved.meta.freqLabel,
+      reportingQuarterLabel: resolved.meta.reportingQuarterLabel,
+      reportingQuarterRange: resolved.meta.reportingQuarterRange,
       catalogTarget: resolved.meta.catalogTarget,
       polarityLabel: resolved.meta.polarityLabel,
       shareInDeptPct: resolved.meta.shareInDeptPct,

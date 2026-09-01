@@ -94,7 +94,13 @@ export default function KraDrillDownModal({ dept, monthKey, onClose }) {
                     >
                       <td>{idx + 1}</td>
                       <td className="kra">{k.name}</td>
-                      <td>{formatMeasurementPeriodTag(k.freq, k.reportedUnit || k.unit, k.reportedUnitLabel || k.unitLabel, k.name)}</td>
+                      <td>{formatMeasurementPeriodTag(
+                        k.freq,
+                        k.reportedUnit || k.unit,
+                        k.reportedUnitLabel || k.unitLabel,
+                        k.name,
+                        k.reportingQuarterLabel || k.freqLabel
+                      )}</td>
                       <td>{formatKpiActual(k.actualValue, k.reportedUnit || k.unit, k.reportedUnitLabel || k.unitLabel, k.name)}</td>
                       <td>{k.score != null ? k.score.toFixed(1) : "—"}</td>
                       <td>{formatTpiSharePct(k.shareInTpiPct)}</td>

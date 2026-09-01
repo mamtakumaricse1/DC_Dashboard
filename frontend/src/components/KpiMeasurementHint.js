@@ -19,7 +19,8 @@ export default function KpiMeasurementHint({ kpi }) {
           k.freq,
           displayUnit,
           displayUnitLabel,
-          k.name || k.indicator
+          k.name || k.indicator,
+          k.reportingQuarterLabel || k.freqLabel
         )}</span>
         {k.catalogTarget != null && (
           <span className="kpi-tag">Target {k.catalogTarget}</span>

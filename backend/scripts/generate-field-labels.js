@@ -147,7 +147,7 @@ const EXPLICIT_LABELS = {
 
   // D13 — Disaster Management
   'D13:1': ['Drills Planned', 'Drills Conducted'],
-  'D13:2': ['Total PHCs and Schools', 'Pre-Monsoon Stocking Complete by April'],
+  'D13:2': ['Total PHCs and Schools', 'With Pre-Monsoon Stocking Complete'],
   'D13:3': ['Target Villages', 'Villages with Documented DRR Plans'],
   'D13:4': ['Reported Incidents', 'Incidents with Relief Within 7 Days'],
   'D13:5': ['Flood/Landslide-Prone Villages', 'Villages with Early Warning Coverage'],

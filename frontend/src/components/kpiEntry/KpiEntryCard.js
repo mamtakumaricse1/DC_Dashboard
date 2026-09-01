@@ -1,9 +1,18 @@
 import React from "react";
 import { ragStatusClass, ragStatusFromScore } from "../../constants/tpi";
-import { displayScore, formatScore, isRatioKpi, preventWheelInputChange } from "../../utils/kpiEntry";
+import {
+  displayScore,
+  formatScore,
+  isKpiDueThisMonth,
+  isRatioKpi,
+  preventWheelInputChange
+} from "../../utils/kpiEntry";
 
-function freqLabel(freq) {
-  return freq === "Q" ? "Quarterly" : "Monthly";
+function periodLabel(kpi) {
+  if (kpi.freq === "Q" && kpi.reporting_quarter_label) {
+    return kpi.reporting_quarter_label;
+  }
+  return kpi.freq === "Q" ? "Quarterly" : "Monthly";
 }
 
 export default function KpiEntryCard({
@@ -16,30 +25,40 @@ export default function KpiEntryCard({
   onField2Change,
   onSingleChange
 }) {
+  const due = isKpiDueThisMonth(kpi);
   const ratio = isRatioKpi(kpi);
   const result = ratio
     ? displayScore(kpi, field1Value, field2Value, null)
     : displayScore(kpi, null, null, singleValue);
 
-  const complete = ratio
+  const complete = due && (ratio
     ? result != null
-    : singleValue !== "" && singleValue != null && Number.isFinite(Number(singleValue));
+    : singleValue !== "" && singleValue != null && Number.isFinite(Number(singleValue)));
 
-  const scoreText = formatScore(kpi, result);
-  const ragClass = result != null ? ragStatusClass(ragStatusFromScore(result)) : "";
+  const scoreText = due ? formatScore(kpi, result) : "—";
+  const ragClass = due && result != null ? ragStatusClass(ragStatusFromScore(result)) : "";
 
   return (
-    <div className={`kpi-entry-row ${complete ? "kpi-entry-row--done" : ""}`}>
+    <div
+      className={`kpi-entry-row ${complete ? "kpi-entry-row--done" : ""} ${
+        !due ? "kpi-entry-row--deferred" : ""
+      }`}
+    >
       <div className="kpi-entry-row-indicator">
         <span className="kpi-entry-row-num">{index + 1}</span>
         <div className="kpi-entry-row-titles">
           <span className="kpi-entry-row-name">{kpi.name}</span>
-          <span className="kpi-entry-row-freq">{freqLabel(kpi.freq)}</span>
+          <span className="kpi-entry-row-freq">{periodLabel(kpi)}</span>
+          {!due && kpi.quarter_due_note && (
+            <span className="kpi-entry-row-defer">{kpi.quarter_due_note}</span>
+          )}
         </div>
       </div>
 
       <div className={`kpi-entry-row-fields ${ratio ? "" : "kpi-entry-row-fields--single"}`}>
-        {ratio ? (
+        {!due ? (
+          <p className="kpi-entry-row-skip">Not required this month</p>
+        ) : ratio ? (
           <>
             <label className="kpi-entry-row-field">
               <span>{kpi.field1_label}</span>

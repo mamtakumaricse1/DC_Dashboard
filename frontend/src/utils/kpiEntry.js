@@ -13,6 +13,12 @@ export function isRatioKpi(kpi) {
   return kpi?.entry_mode !== "SINGLE";
 }
 
+/** Monthly KPIs every month; quarterly only at fiscal quarter-end (Jun, Sep, Dec, Mar). */
+export function isKpiDueThisMonth(kpi) {
+  if (kpi?.freq !== "Q") return true;
+  return kpi.quarter_due_this_month !== false;
+}
+
 function parseStoredNumber(value) {
   if (value === null || value === undefined || value === "") return null;
   const n = Number(String(value).trim());
@@ -107,9 +113,14 @@ export function isKpiEntryComplete(kpi, field1Values, field2Values, singleValues
 }
 
 export function countFilledKpis(kpis, field1Values, field2Values, singleValues) {
-  return kpis.filter((k) =>
+  const due = kpis.filter(isKpiDueThisMonth);
+  return due.filter((k) =>
     isKpiEntryComplete(k, field1Values, field2Values, singleValues)
   ).length;
+}
+
+export function countDueKpis(kpis) {
+  return kpis.filter(isKpiDueThisMonth).length;
 }
 
 /**
@@ -117,7 +128,7 @@ export function countFilledKpis(kpis, field1Values, field2Values, singleValues) 
  * @throws {Error} when a required field is missing
  */
 export function buildSubmitEntries(kpis, field1Values, field2Values, singleValues) {
-  return kpis.map((k) => {
+  return kpis.filter(isKpiDueThisMonth).map((k) => {
     if (isRatioKpi(k)) {
       const f1 = field1Values[k.kpi_id];
       const f2 = field2Values[k.kpi_id];

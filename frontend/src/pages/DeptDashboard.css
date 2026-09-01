@@ -601,8 +601,25 @@
   color: #a16207;
 }
 
-.kpi-entry-row-score-value.status-red {
-  color: #b91c1c;
+.kpi-entry-row--deferred {
+  opacity: 0.72;
+  background: #f8fafc;
+}
+
+.kpi-entry-row-defer {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.kpi-entry-row-skip {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 .kpi-entry-empty {

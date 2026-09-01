@@ -3,7 +3,7 @@
  */
 import React, { useMemo, useState } from "react";
 import { toMonthLabel } from "../../utils/api";
-import { countFilledKpis } from "../../utils/kpiEntry";
+import { countDueKpis, countFilledKpis } from "../../utils/kpiEntry";
 import { DEPT_ENTRY_STEPS } from "../../constants/deptKpiUx";
 import KpiEntryTable from "./KpiEntryTable";
 import SubmissionStatusBanner from "./SubmissionStatusBanner";
@@ -30,7 +30,7 @@ export default function DataSubmissionPanel({
     () => countFilledKpis(kpis, field1Values, field2Values, singleValues),
     [kpis, field1Values, field2Values, singleValues]
   );
-  const total = kpis.length;
+  const total = countDueKpis(kpis);
   const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
 
   return (
@@ -39,7 +39,9 @@ export default function DataSubmissionPanel({
         <div className="dept-entry-header-text">
           <h2 className="panel-title">{monthLabel}</h2>
           <p className="dept-entry-subtitle">
-            {filled} of {total} filled · enter both counts per row
+            {reportingCycle?.submissionWindow?.hint
+              ? reportingCycle.submissionWindow.hint
+              : `${filled} of ${total} filled · enter both counts per row`}
           </p>
         </div>
         <div className="dept-entry-header-actions">

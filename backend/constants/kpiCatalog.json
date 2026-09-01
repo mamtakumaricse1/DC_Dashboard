@@ -1383,7 +1383,7 @@
     {
       "deptId": "D13",
       "num": 2,
-      "name": "Pre-Monsoon Stocking at PHCs/Schools (% complete by April)",
+      "name": "Pre-Monsoon Stocking at PHCs/Schools (% complete)",
       "unit": "pct",
       "unitLabel": "%",
       "target": 100,

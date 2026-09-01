@@ -25,7 +25,12 @@ async function loadDeptKpisForSubmission(db, deptId) {
   ]);
 
   return {
-    kpis: kpiResult.recordset.map((row) => enrichKpiWithEntrySpec(row)),
+    kpis: kpiResult.recordset.map((row) =>
+      enrichKpiWithEntrySpec(row, {
+        activeMonthKey: activeMonth,
+        fiscalStartMonth: cycle.fiscalYearStartMonth || 4
+      })
+    ),
     submission,
     reportingCycle,
     district: toPublicDistrictConfig(districtRow),
